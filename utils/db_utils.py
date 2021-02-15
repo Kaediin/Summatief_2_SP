@@ -1,4 +1,5 @@
-import psycopg2, db_auth
+import psycopg2
+from utils import db_auth
 
 connection = None
 cursor = None
@@ -26,4 +27,33 @@ def execute_query(query, data):
     cursor.execute(query, data)
     connection.commit()
 
+    close_db_connection()
+
+def fill_products_db(products):
+    open_db_connection()
+    for product in products:
+        try:
+            id = product['_id']
+            brand = product['brand']
+            category = product['category']
+            color = product['color']
+            deeplink = product['deeplink']
+            description = product['description']
+            fast_mover = product['fast_mover']
+            flavor = product['flavor']
+            gender = product['gender']
+            herhaalaankopen = product['herhaalaankopen']
+            name = product['name']
+            predict_out_of_stock_date = product['predict_out_of_stock_date']
+            recommendable = product['recommendable']
+            size = product['size']
+        except:
+            print(product)
+
+        try:
+            cursor.execute("insert into products (id, brand, category, color, deeplink, description, fast_mover, flavor, gender, herhaalaankopen, name, predict_out_of_stock_date, recommendable, size) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                            "",(id, brand, category, color, deeplink, description,fast_mover, flavor, gender, herhaalaankopen, name, predict_out_of_stock_date, recommendable, size))
+        except:
+            print(product)
+    connection.commit()
     close_db_connection()
