@@ -73,6 +73,9 @@ def create_tables():
     cursor.execute("CREATE TABLE prices (id varchar,discount float,mrsp float,selling_price float)")
     cursor.execute("CREATE TABLE products (id varchar,brand varchar, category varchar, color varchar,"
                    "deeplink varchar, description varchar, fast_mover boolean, flavor varchar, gender varchar,"
-                   " herhaalaankopen boolean, images boolean, name varchar, predict_out_of_stock_date date, recommendable boolean, size varchar)")
+                   " herhaalaankopen boolean, name varchar, predict_out_of_stock_date date, recommendable boolean, size varchar)")
+    # TODO:
+    # create table stock
+    # create table properties
 
     close_db_connection()
