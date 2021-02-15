@@ -10,6 +10,7 @@ def open_db_connection():
     try:
         connection = utils.db_auth.getPostgreSQLConnection(psycopg2)
         cursor = connection.cursor()
+        print("PostgreSQL connection is open")
     except (Exception, psycopg2.Error) as error:
         print("Error while connecting to PostgreSQL", error)
 
@@ -22,7 +23,9 @@ def close_db_connection():
         connection.close()
         print("PostgreSQL connection is closed")
 
-def fill_products_db(products):
+
+
+def fill_db(products):
     open_db_connection()
     for product in products:
         try:
@@ -40,42 +43,29 @@ def fill_products_db(products):
             predict_out_of_stock_date = product['predict_out_of_stock_date']
             recommendable = product['recommendable']
             size = product['size']
+            discount = product['price']['discount']
+            mrsp = product['price']['mrsp']
+            selling_price = product['price']['selling_price']
         except:
-            print(product)
+            try:
+                mrsp = product['price']['msrp']
+            except:
+                print('data incomplete')
 
         try:
             cursor.execute("insert into products (id, brand, category, color, deeplink, description, fast_mover, flavor, gender, herhaalaankopen, name, predict_out_of_stock_date, recommendable, size) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
                             "",(id, brand, category, color, deeplink, description,fast_mover, flavor, gender, herhaalaankopen, name, predict_out_of_stock_date, recommendable, size))
+
         except:
-            print(product)
-    close_db_connection()
-
-
-
-def fill_prices_db(products):
-
-    open_db_connection()
-    for product in products:
+            pass
 
         try:
-            id = product['_id']
-            discount = product['price']['discount']
-            mrsp = product['price']['mrsp']
-            selling_price = product['price']['selling_price']
-            print(selling_price)
-        except KeyError:
-            try:
-                mrsp = product['price']['msrp']
-            except:
-                print(product)
-
-                continue
-        try:
-            cursor.execute("insert into prices (id, discount, mrsp, selling_price) values (%s, %s, %s, %s)",(id, discount, mrsp, selling_price))
+            cursor.execute("insert into prices (id, discount, mrsp, selling_price) values (%s, %s, %s, %s)",
+                           (id, discount, mrsp, selling_price))
         except:
-            print(product)
-    close_db_connection()
+            pass
 
+    close_db_connection()
 
 
 def create_tables():

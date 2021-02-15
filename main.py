@@ -10,5 +10,5 @@ products = db.products.find({})
 
 #create DB
 database.create_tables()
-database.fill_products_db(products)
-database.fill_prices_db(products)
+database.fill_db(products)
+
