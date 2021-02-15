@@ -28,40 +28,18 @@ def close_db_connection():
 def fill_db(products):
     open_db_connection()
     for product in products:
-        try:
-            id = product['_id']
-            brand = product['brand']
-            category = product['category']
-            color = product['color']
-            deeplink = product['deeplink']
-            description = product['description']
-            fast_mover = product['fast_mover']
-            flavor = product['flavor']
-            gender = product['gender']
-            herhaalaankopen = product['herhaalaankopen']
-            name = product['name']
-            predict_out_of_stock_date = product['predict_out_of_stock_date']
-            recommendable = product['recommendable']
-            size = product['size']
-            discount = product['price']['discount']
-            mrsp = product['price']['mrsp']
-            selling_price = product['price']['selling_price']
-        except:
-            try:
-                mrsp = product['price']['msrp']
-            except:
-                print('data incomplete')
 
         try:
             cursor.execute("insert into products (id, brand, category, color, deeplink, description, fast_mover, flavor, gender, herhaalaankopen, name, predict_out_of_stock_date, recommendable, size) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-                            "",(id, brand, category, color, deeplink, description,fast_mover, flavor, gender, herhaalaankopen, name, predict_out_of_stock_date, recommendable, size))
+                            "",(product['_id'], product['brand'], product['category'], product['color'], product['deeplink'], product['description'],product['flavor'], product['flavor'],
+                                product['gender'], product['herhaalaankopen'], product['name'], product['predict_out_of_stock_date'], product['recommendable'], product['size']))
 
         except:
             pass
 
         try:
             cursor.execute("insert into prices (id, discount, mrsp, selling_price) values (%s, %s, %s, %s)",
-                           (id, discount, mrsp, selling_price))
+                           (product['_id'], product['price']['discount'], product['price']['mrsp'], product['price']['selling_price']))
         except:
             pass
 
