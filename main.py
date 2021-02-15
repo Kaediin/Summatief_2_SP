@@ -1,4 +1,4 @@
-import psycopg2 as psycopg2
+import psycopg2
 import pymongo
 from utils import db_utils as database
 from utils import db_auth
@@ -37,7 +37,6 @@ def fill_products_db():
 
 def fill_prices_db():
 
-
     for product in products:
 
         try:
@@ -57,5 +56,5 @@ def fill_prices_db():
         except:
             print(product)
 
-
+#test
 fill_prices_db()
