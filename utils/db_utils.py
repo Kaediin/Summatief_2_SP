@@ -1,6 +1,4 @@
 import psycopg2, db_auth
-from psycopg2 import sql
-
 
 connection = None
 cursor = None
@@ -9,8 +7,7 @@ cursor = None
 def open_db_connection():
     global connection, cursor
     try:
-        connection = psycopg2.connect(
-            f"dbname='{db_auth.name}' user='{db_auth.name}' host='{db_auth.host}' password='{db_auth.password}'")
+        connection = db_auth.getPostgreSQLConnection(psycopg2)
         cursor = connection.cursor()
     except (Exception, psycopg2.Error) as error:
         print("Error while connecting to PostgreSQL", error)
