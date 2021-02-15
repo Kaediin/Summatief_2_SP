@@ -77,5 +77,7 @@ def create_tables():
     # TODO:
     # create table stock
     # create table properties
+    # create table images
+    # create table sm
 
     close_db_connection()
