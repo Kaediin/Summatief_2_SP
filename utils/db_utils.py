@@ -24,22 +24,25 @@ def close_db_connection():
         print("PostgreSQL connection is closed")
 
 
-
 def fill_db(products):
     open_db_connection()
     for product in products:
 
         try:
-            cursor.execute("insert into products (id, brand, category, color, deeplink, description, fast_mover, flavor, gender, herhaalaankopen, name, predict_out_of_stock_date, recommendable, size) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-                            "",(product['_id'], product['brand'], product['category'], product['color'], product['deeplink'], product['description'],product['flavor'], product['flavor'],
-                                product['gender'], product['herhaalaankopen'], product['name'], product['predict_out_of_stock_date'], product['recommendable'], product['size']))
+            cursor.execute(
+                "insert into products (id, brand, category, color, deeplink, description, fast_mover, flavor, gender, herhaalaankopen, name, predict_out_of_stock_date, recommendable, size) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                "", (product['_id'], product['brand'], product['category'], product['color'], product['deeplink'],
+                     product['description'], product['flavor'], product['flavor'],
+                     product['gender'], product['herhaalaankopen'], product['name'],
+                     product['predict_out_of_stock_date'], product['recommendable'], product['size']))
 
         except:
             pass
 
         try:
             cursor.execute("insert into prices (id, discount, mrsp, selling_price) values (%s, %s, %s, %s)",
-                           (product['_id'], product['price']['discount'], product['price']['mrsp'], product['price']['selling_price']))
+                           (product['_id'], product['price']['discount'], product['price']['mrsp'],
+                            product['price']['selling_price']))
         except:
             pass
 
@@ -48,16 +51,31 @@ def fill_db(products):
 
 def create_tables():
     open_db_connection()
-    cursor.execute("CREATE TABLE prices (id varchar,discount float,mrsp float,selling_price float)")
-    cursor.execute("CREATE TABLE products (id varchar,brand varchar, category varchar, color varchar,"
-                   "deeplink varchar, description varchar, fast_mover boolean, flavor varchar, gender varchar,"
-                   " herhaalaankopen boolean, name varchar, predict_out_of_stock_date date, recommendable boolean, size varchar)")
-    cursor.execute("CREATE TABLE categories (id varchar, category varchar, sub_category varchar, sub_sub_category varchar, sub_sub_sub_category varchar)")
+    try:
+        cursor.execute("CREATE TABLE prices (id varchar,discount float,mrsp float,selling_price float)")
+    except psycopg2.errors.DuplicateTable as e:
+        connection.rollback()
+        print(e)
+    try:
+        cursor.execute("CREATE TABLE products (id varchar,brand varchar, category varchar, color varchar,"
+                       "deeplink varchar, description varchar, fast_mover boolean, flavor varchar, gender varchar,"
+                       " herhaalaankopen boolean, name varchar, predict_out_of_stock_date date, recommendable boolean, size varchar)")
+    except psycopg2.errors.DuplicateTable as e:
+        connection.rollback()
+        print(e)
+
+    try:
+        cursor.execute(
+            "CREATE TABLE categories (id varchar, category varchar, sub_category varchar, sub_sub_category varchar, sub_sub_sub_category varchar)")
+    except psycopg2.errors.DuplicateTable as e:
+        connection.rollback()
+        print(e)
 
     # TODO:
     # create table stock
     # create table properties
     # create table images
     # create table sm
+
 
     close_db_connection()
