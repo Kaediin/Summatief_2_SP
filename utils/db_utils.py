@@ -1,5 +1,7 @@
 import psycopg2
+import utils.model_utils as model_utils
 import utils.db_auth
+from models.product_properties import ProductProperties
 
 connection = None
 cursor = None
@@ -46,8 +48,75 @@ def fill_db(products):
         except:
             pass
 
+        try:
+            insert_product_properties(product, cursor)
+        except:
+            pass
+
     close_db_connection()
 
+def insert_product_properties(product, cursor):
+    try:
+        properties = product['properties']
+        pp = ProductProperties(
+            model_utils.get_product_property(properties, 'availability'),
+            model_utils.get_product_property(properties, 'bundel_sku'),
+            model_utils.get_product_property(properties, 'discount'),
+            model_utils.get_product_property(properties, 'doelgroep'),
+            model_utils.get_product_property(properties, 'eenheid'),
+            model_utils.get_product_property(properties, 'factor'),
+            model_utils.get_product_property(properties, 'folder_actief'),
+            model_utils.get_product_property(properties, 'gebruik'),
+            model_utils.get_product_property(properties, 'geschiktvoor'),
+            model_utils.get_product_property(properties, 'geursoort'),
+            model_utils.get_product_property(properties, 'huidconditie'),
+            model_utils.get_product_property(properties, 'huidtype'),
+            model_utils.get_product_property(properties, 'huidtypegezicht'),
+            model_utils.get_product_property(properties, 'inhoud'),
+            model_utils.get_product_property(properties, 'klacht'),
+            model_utils.get_product_property(properties, 'kleur'),
+            model_utils.get_product_property(properties, 'leeftijd'),
+            model_utils.get_product_property(properties, 'mid'),
+            model_utils.get_product_property(properties, 'online_only'),
+            model_utils.get_product_property(properties, 'serie'),
+            model_utils.get_product_property(properties, 'shopcart_promo_item'),
+            model_utils.get_product_property(properties, 'shopcart_promo_price'),
+            model_utils.get_product_property(properties, 'soort'),
+            model_utils.get_product_property(properties, 'soorthaarverzorging'),
+            model_utils.get_product_property(properties, 'soortmondverzorging'),
+            model_utils.get_product_property(properties, 'sterkte'),
+            model_utils.get_product_property(properties, 'stock'),
+            model_utils.get_product_property(properties, 'tax'),
+            model_utils.get_product_property(properties, 'type'),
+            model_utils.get_product_property(properties, 'typehaarkleuring'),
+            model_utils.get_product_property(properties, 'typetandenborstel'),
+            model_utils.get_product_property(properties, 'variant'),
+            model_utils.get_product_property(properties, 'waterproof'),
+            model_utils.get_product_property(properties, 'weekdeal'),
+            model_utils.get_product_property(properties, 'weekdeal_from'),
+            model_utils.get_product_property(properties, 'weekdeal_to')
+        )
+        try:
+            cursor.execute("insert into product_properties (product_id, availability, bundel_sku, discount, doelgroep, eenheid, factor, folder_actief, gebruik, geschiktvoor, geursoort, huidconditie, huidtype, huidtypegezicht, inhoud, klacht, kleur, leeftijd, mid, online_only, serie, shopcart_promo_item, shopcart_promo_price, soort, soorthaarverzorging, soortmondverzorging, sterkte, stock, tax, type, typehaarkleuring, typetandenborstel, variant, waterproof, weekdeal, weekdeal_from, weekdeal_to) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (product['_id'], pp.availablity, pp.bundel_sku, pp.discount, pp.doelgroep, pp.eenheid, pp.factor,
+                 pp.folder_actief, pp.gebruik, pp.geschiktvoor, pp.geursoort, pp.huidconditie, pp.huidtype,
+                 pp.huidtypegezicht, pp.inhoud, pp.klacht, pp.kleur, pp.leeftijd, pp.mid, pp.online_only, pp.serie,
+                 pp.shopcart_promo_item, pp.shopcart_promo_price, pp.soort, pp.soorthaarverzorging,
+                 pp.soortmondverzorging, pp.sterkte, pp.stock, pp.tax, pp.type, pp.typehaarkleuring,
+                 pp.typetandenborstel, pp.variant, pp.waterproof, pp.weekdeal, pp.weekdeal_from, pp.weekdeal_to))
+        except Exception as e:
+            connection.rollback()
+            pass
+    except KeyError:
+        print(f'No properties found for id: {product}')
+
+
+# def fill_product_properties(products):
+#     open_db_connection()
+#     for product in products:
+#
+#
+#     close_db_connection()
 
 def create_tables():
     open_db_connection()
@@ -71,11 +140,17 @@ def create_tables():
         connection.rollback()
         print(e)
 
+    try:
+        cursor.execute(
+            "CREATE TABLE product_properties( product_id varchar primary key, availability varchar NULL, bundel_sku varchar NULL, discount varchar NULL, doelgroep varchar NULL, eenheid varchar NULL, factor varchar NULL, folder_actief varchar NULL, gebruik varchar NULL, geschiktvoor varchar NULL, geursoort varchar NULL, huidconditie varchar NULL, huidtype varchar NULL, huidtypegezicht varchar NULL, inhoud varchar NULL, klacht varchar NULL, kleur varchar NULL, leeftijd varchar NULL, mid varchar NULL, online_only varchar NULL, serie varchar NULL, shopcart_promo_item varchar NULL, shopcart_promo_price varchar NULL, soort varchar NULL, soorthaarverzorging varchar NULL, soortmondverzorging varchar NULL, sterkte varchar NULL, stock varchar NULL, tax varchar NULL, type varchar NULL, typehaarkleuring varchar NULL, typetandenborstel varchar NULL, variant varchar NULL, waterproof varchar NULL, weekdeal bool NULL, weekdeal_from varchar NULL, weekdeal_to varchar NULL)")
+    except psycopg2.errors.DuplicateTable as e:
+        connection.rollback()
+        print(e)
+
     # TODO:
     # create table stock
     # create table properties
     # create table images
     # create table sm
-
 
     close_db_connection()

@@ -7,8 +7,10 @@ db = db_auth.getMongoDatabase(client)
 
 products = db.products.find({})
 
-
-#create DB
+print('Database tables aan het aanmaken')
 database.create_tables()
+print('Database tables zijn aangemaakt!')
+print('Database producten worden gevuld.. Dit kan even duren')
 database.fill_db(products)
+print('Database producten zijn gevuld!')
 
