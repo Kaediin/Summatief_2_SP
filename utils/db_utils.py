@@ -53,6 +53,23 @@ def fill_db(products):
         except:
             pass
 
+        # try:
+        #     for stock in product['stock']:
+        #         cursor.execute(
+        #             "INSERT INTO product_stock (product_id, date, stock_level) VALUES (%s, %s, %s)",
+        #             (product['_id'], stock['date'], stock['stock_level'])
+        #         )
+        # except:
+        #     pass
+
+        try:
+            cursor.execute(
+                "INSERT INTO product_sm (product_id, last_updated, type, is_active) VALUES (%s, %s, %s, %s)",
+                (product['_id'], product['sm']['last_updated'], product['sm']['type'], product['sm']['is_active'])
+            )
+        except Exception as e:
+            print(e)
+
     close_db_connection()
 
 def insert_product_properties(product, cursor):
@@ -111,13 +128,6 @@ def insert_product_properties(product, cursor):
         print(f'No properties found for id: {product}')
 
 
-# def fill_product_properties(products):
-#     open_db_connection()
-#     for product in products:
-#
-#
-#     close_db_connection()
-
 def create_tables():
     open_db_connection()
     try:
@@ -146,6 +156,22 @@ def create_tables():
     except psycopg2.errors.DuplicateTable as e:
         connection.rollback()
         print(e)
+
+    # try:
+    #     cursor.execute(
+    #         "CREATE TABLE product_stock (product_id varchar, date timestamp NOT NULL, stock_level int NOT NULL, PRIMARY KEY (product_id, date))")
+    # except psycopg2.errors.DuplicateTable as e:
+    #     connection.rollback()
+    #     print(e)
+
+    try:
+        cursor.execute(
+            "CREATE TABLE product_sm (product_id varchar, last_updated timestamp, type varchar, is_active boolean, PRIMARY KEY (product_id))")
+    except psycopg2.errors.DuplicateTable as e:
+        connection.rollback()
+        print(e)
+
+
 
     # TODO:
     # create table stock
