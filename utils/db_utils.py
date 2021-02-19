@@ -131,14 +131,16 @@ def insert_product_properties(product, cursor):
 def create_tables():
     open_db_connection()
     try:
-        cursor.execute("CREATE TABLE prices (product_id varchar PRIMARY KEY,discount float,mrsp float,selling_price float)")
+        cursor.execute(
+            "CREATE TABLE products (product_id varchar PRIMARY KEY,brand varchar, category varchar, color varchar,"
+            "deeplink varchar, description varchar, fast_mover boolean, flavor varchar, gender varchar,"
+            " herhaalaankopen boolean, name varchar, predict_out_of_stock_date date, recommendable boolean, size varchar)")
     except psycopg2.errors.DuplicateTable as e:
         connection.rollback()
         print(e)
+
     try:
-        cursor.execute("CREATE TABLE products (product_id varchar PRIMARY KEY,brand varchar, category varchar, color varchar,"
-                       "deeplink varchar, description varchar, fast_mover boolean, flavor varchar, gender varchar,"
-                       " herhaalaankopen boolean, name varchar, predict_out_of_stock_date date, recommendable boolean, size varchar)")
+        cursor.execute("CREATE TABLE prices (product_id varchar PRIMARY KEY,discount float,mrsp float,selling_price float)")
     except psycopg2.errors.DuplicateTable as e:
         connection.rollback()
         print(e)
@@ -152,7 +154,14 @@ def create_tables():
 
     try:
         cursor.execute(
-            "CREATE TABLE product_properties( product_id varchar primary key, availability varchar NULL, bundel_sku varchar NULL, discount varchar NULL, doelgroep varchar NULL, eenheid varchar NULL, factor varchar NULL, folder_actief varchar NULL, gebruik varchar NULL, geschiktvoor varchar NULL, geursoort varchar NULL, huidconditie varchar NULL, huidtype varchar NULL, huidtypegezicht varchar NULL, inhoud varchar NULL, klacht varchar NULL, kleur varchar NULL, leeftijd varchar NULL, mid varchar NULL, online_only varchar NULL, serie varchar NULL, shopcart_promo_item varchar NULL, shopcart_promo_price varchar NULL, soort varchar NULL, soorthaarverzorging varchar NULL, soortmondverzorging varchar NULL, sterkte varchar NULL, stock varchar NULL, tax varchar NULL, type varchar NULL, typehaarkleuring varchar NULL, typetandenborstel varchar NULL, variant varchar NULL, waterproof varchar NULL, weekdeal bool NULL, weekdeal_from varchar NULL, weekdeal_to varchar NULL)")
+            "CREATE TABLE product_properties( product_id varchar primary key, availability varchar NULL, bundel_sku varchar NULL, discount varchar NULL, doelgroep varchar NULL, eenheid varchar NULL, factor varchar NULL, folder_actief varchar NULL, gebruik varchar NULL, geschiktvoor varchar NULL, geursoort varchar NULL, huidconditie varchar NULL, huidtype varchar NULL, huidtypegezicht varchar NULL, inhoud varchar NULL, klacht varchar NULL, kleur varchar NULL, leeftijd varchar NULL, mid varchar NULL, online_only varchar NULL, serie varchar NULL, shopcart_promo_item varchar NULL, shopcart_promo_price varchar NULL, soort varchar NULL, soorthaarverzorging varchar NULL, soortmondverzorging varchar NULL, sterkte varchar NULL, stock varchar NULL, tax varchar NULL, type varchar NULL, typehaarkleuring varchar NULL, typetandenborstel varchar NULL, variant varchar NULL, waterproof varchar NULL, weekdeal boolean NULL, weekdeal_from varchar NULL, weekdeal_to varchar NULL)")
+    except psycopg2.errors.DuplicateTable as e:
+        connection.rollback()
+        print(e)
+
+    try:
+        cursor.execute(
+            "CREATE TABLE profiles (profile_id varchar PRIMARY KEY, unique_hash boolean, latest_activity timestamp, latest_visit int)")
     except psycopg2.errors.DuplicateTable as e:
         connection.rollback()
         print(e)
