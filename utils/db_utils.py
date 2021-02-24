@@ -51,13 +51,24 @@ def fill_db(products):
                 (product['_id'], product['sm']['last_updated'], product['sm']['type'], product['sm']['is_active']))
 
 
-        except Exception as e:
-            print(e)
+
+        except (Exception, psycopg2.Error) as error:
+            print(error)
             pass
 
+    close_db_connection()
+
+def assign_relations():
+
+    open_db_connection()
 
     cursor.execute("ALTER TABLE product_sm ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
+    cursor.execute("ALTER TABLE product_categories ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
+    cursor.execute("ALTER TABLE product_prices ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
+    cursor.execute("ALTER TABLE product_properties ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
+
     close_db_connection()
+
 
 def insert_product_properties(product, cursor):
     try:
