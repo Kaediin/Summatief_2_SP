@@ -28,6 +28,7 @@ def close_db_connection():
 
 def fill_db(products):
     open_db_connection()
+
     for product in products:
 
         try:
@@ -38,38 +39,24 @@ def fill_db(products):
                      product['gender'], product['herhaalaankopen'], product['name'],
                      product['predict_out_of_stock_date'], product['recommendable'], product['size']))
 
-        except:
-            pass
+            cursor.execute(
+                "insert into product_prices (product_id, discount, mrsp, selling_price) values (%s, %s, %s, %s)",
+                (product['_id'], product['price']['discount'], product['price']['mrsp'],
+                 product['price']['selling_price']))
 
-        try:
-            cursor.execute("insert into prices (product_id, discount, mrsp, selling_price) values (%s, %s, %s, %s)",
-                           (product['_id'], product['price']['discount'], product['price']['mrsp'],
-                            product['price']['selling_price']))
-        except:
-            pass
-
-        try:
             insert_product_properties(product, cursor)
-        except:
-            pass
 
-        # try:
-        #     for stock in product['stock']:
-        #         cursor.execute(
-        #             "INSERT INTO product_stock (product_id, date, stock_level) VALUES (%s, %s, %s)",
-        #             (product['_id'], stock['date'], stock['stock_level'])
-        #         )
-        # except:
-        #     pass
-
-        try:
             cursor.execute(
                 "INSERT INTO product_sm (product_id, last_updated, type, is_active) VALUES (%s, %s, %s, %s)",
-                (product['_id'], product['sm']['last_updated'], product['sm']['type'], product['sm']['is_active'])
-            )
+                (product['_id'], product['sm']['last_updated'], product['sm']['type'], product['sm']['is_active']))
+
+
         except Exception as e:
             print(e)
+            pass
 
+
+    cursor.execute("ALTER TABLE product_sm ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
     close_db_connection()
 
 def insert_product_properties(product, cursor):
@@ -140,14 +127,14 @@ def create_tables():
         print(e)
 
     try:
-        cursor.execute("CREATE TABLE prices (product_id varchar PRIMARY KEY,discount float,mrsp float,selling_price float)")
+        cursor.execute("CREATE TABLE product_prices (product_id varchar PRIMARY KEY,discount float,mrsp float,selling_price float)")
     except psycopg2.errors.DuplicateTable as e:
         connection.rollback()
         print(e)
 
     try:
         cursor.execute(
-            "CREATE TABLE categories (product_id varchar PRIMARY KEY, category varchar, sub_category varchar, sub_sub_category varchar, sub_sub_sub_category varchar)")
+            "CREATE TABLE product_categories (product_id varchar PRIMARY KEY, category varchar, sub_category varchar, sub_sub_category varchar, sub_sub_sub_category varchar)")
     except psycopg2.errors.DuplicateTable as e:
         connection.rollback()
         print(e)
