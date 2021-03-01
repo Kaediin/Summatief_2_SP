@@ -26,7 +26,7 @@ def close_db_connection():
         print("PostgreSQL connection is closed")
 
 
-def fill_db(products, profiles):
+def fill_db(products, profiles, sessions):
     open_db_connection()
 
     n_products = products.count()
@@ -97,6 +97,35 @@ def fill_db(products, profiles):
         except (Exception, psycopg2.Error) as error:
             print(error)
             connection.rollback()
+            pass
+
+
+    for session in sessions:
+        temp_list = []
+        temp_list_unique = []
+
+        try:
+            for id in session['order']['products']:
+                temp_list.append(id['id'])
+
+            [temp_list_unique.append(e) for e in temp_list if e not in temp_list_unique]
+
+            for id in temp_list_unique:
+                try:
+
+                    cursor.execute(
+                        "INSERT INTO product_in_order (session_id, product_id) VALUES (%s, %s)",
+                        (session['_id'], id))
+
+                except (Exception, psycopg2.Error) as error:
+                    connection.commit()
+
+                    cursor.execute(
+                        "INSERT INTO product_in_order (session_id, product_id) VALUES (%s, %s)",
+                        (str(session['_id']), id))
+
+                    continue
+        except:
             pass
 
     close_db_connection()
@@ -264,6 +293,10 @@ def create_tables():
             ('profile_id', 'varchar'),
             ('order_number', 'serial, PRIMARY KEY(profile_id, order_number)'),
             ('order_id', 'float')
+        ],
+        'product_in_order': [
+            ('session_id', 'varchar'),
+            ('product_id', 'varchar, PRIMARY KEY(session_id, product_id)')
         ]
     }
 
