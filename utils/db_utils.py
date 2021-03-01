@@ -50,6 +50,11 @@ def fill_db(products):
                 "INSERT INTO product_sm (product_id, last_updated, type, is_active) VALUES (%s, %s, %s, %s)",
                 (product['_id'], product['sm']['last_updated'], product['sm']['type'], product['sm']['is_active']))
 
+            cursor.execute(
+                "INSERT INTO product_categories (product_id, category, sub_category, sub_sub_category, sub_sub_sub_category) VALUES (%s, %s, %s, %s, %s)",
+                (product['_id'], model_utils.get_product_property(product, 'category'), model_utils.get_product_property(product, 'sub_category'), model_utils.get_product_property(product, 'sub_sub_category'), model_utils.get_product_property(product, 'sub_sub_sub_category'))
+            )
+
 
 
         except (Exception, psycopg2.Error) as error:
