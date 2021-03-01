@@ -179,6 +179,14 @@ def create_tables():
         print(e)
 
 
+    try:
+        cursor.execute(
+            "CREATE TABLE profile_order (profile_id varchar primary key, latest timestamp, count integer, first timestamp)")
+    except psycopg2.errors.DuplicateTable as e:
+        connection.rollback()
+        print(e)
+
+
 
     # TODO:
     # create table stock

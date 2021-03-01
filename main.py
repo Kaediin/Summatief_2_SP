@@ -13,6 +13,5 @@ print('Database tables zijn aangemaakt!')
 print('Database producten worden gevuld.. Dit kan even duren')
 database.fill_db(products)
 print('Database producten zijn gevuld!')
-database.assign_relations()
+database.assign_relations() 
 print('Relaties zijn toegekend')
-
