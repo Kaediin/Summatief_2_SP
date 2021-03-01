@@ -107,6 +107,8 @@ def fill_db(products, profiles, sessions):
             pass
 
 
+
+    # zet alle unieke products per bestelling in de DB
     for session in sessions:
         count_sessions += 1
         if count_sessions % 10000 == 0 or count_sessions == n_sessions or count_sessions == 1:
@@ -118,29 +120,20 @@ def fill_db(products, profiles, sessions):
             for id in session['order']['products']:
 
                 # voer dit alleen uit als het product_id in orders ook in de products tabel zit. Anders kunnen we geen foreign keys toekennen
-                if id['id'] not in product_id_list:
-                    continue
+                if id['id'] in product_id_list:
 
-                temp_list.append(id['id'])
+                    temp_list.append(id['id'])
+                    [temp_list_unique.append(e) for e in temp_list if e not in temp_list_unique]
 
-            [temp_list_unique.append(e) for e in temp_list if e not in temp_list_unique]
-
-            for id in temp_list_unique:
-                try:
-
-                    cursor.execute(
-                        "INSERT INTO product_in_order (session_id, product_id) VALUES (%s, %s)",
-                        (session['_id'], id))
-
-                except (Exception, psycopg2.Error) as error:
-                    connection.commit()
-
-                    cursor.execute(
+                    for id in temp_list_unique:
+                        cursor.execute(
                         "INSERT INTO product_in_order (session_id, product_id) VALUES (%s, %s)",
                         (str(session['_id']), id))
-
+                else:
                     continue
-        except:
+        except (Exception, psycopg2.Error) as error:
+            print(error)
+            connection.rollback()
             pass
 
     close_db_connection()
