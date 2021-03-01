@@ -26,7 +26,7 @@ def close_db_connection():
         print("PostgreSQL connection is closed")
 
 
-def fill_db(products):
+def fill_db(products, profiles):
     open_db_connection()
 
     for product in products:
@@ -55,16 +55,29 @@ def fill_db(products):
                 (product['_id'], model_utils.get_product_property(product, 'category'), model_utils.get_product_property(product, 'sub_category'), model_utils.get_product_property(product, 'sub_sub_category'), model_utils.get_product_property(product, 'sub_sub_sub_category'))
             )
 
-
-
         except (Exception, psycopg2.Error) as error:
             print(error)
+            connection.rollback()
+            pass
+
+    for profile in profiles:
+        try:
+            profile_id = str(profile['_id'])
+            cursor.execute(
+                "insert into profiles (profile_id, unique_hash, latest_activity, latest_visit) values (%s, %s, %s, %s)",
+                (profile_id,
+                 model_utils.get_product_property(profile, 'unique_hash'),
+                 model_utils.get_product_property(profile, 'latest_activity'),
+                 model_utils.get_product_property(profile, 'latest_visit')))
+        except (Exception, psycopg2.Error) as error:
+            print(error)
+            connection.rollback()
             pass
 
     close_db_connection()
 
-def assign_relations():
 
+def assign_relations():
     open_db_connection()
 
     cursor.execute("ALTER TABLE product_sm ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
@@ -117,7 +130,8 @@ def insert_product_properties(product, cursor):
             model_utils.get_product_property(properties, 'weekdeal_to')
         )
         try:
-            cursor.execute("insert into product_properties (product_id, availability, bundel_sku, discount, doelgroep, eenheid, factor, folder_actief, gebruik, geschiktvoor, geursoort, huidconditie, huidtype, huidtypegezicht, inhoud, klacht, kleur, leeftijd, mid, online_only, serie, shopcart_promo_item, shopcart_promo_price, soort, soorthaarverzorging, soortmondverzorging, sterkte, stock, tax, type, typehaarkleuring, typetandenborstel, variant, waterproof, weekdeal, weekdeal_from, weekdeal_to) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            cursor.execute(
+                "insert into product_properties (product_id, availability, bundel_sku, discount, doelgroep, eenheid, factor, folder_actief, gebruik, geschiktvoor, geursoort, huidconditie, huidtype, huidtypegezicht, inhoud, klacht, kleur, leeftijd, mid, online_only, serie, shopcart_promo_item, shopcart_promo_price, soort, soorthaarverzorging, soortmondverzorging, sterkte, stock, tax, type, typehaarkleuring, typetandenborstel, variant, waterproof, weekdeal, weekdeal_from, weekdeal_to) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                 (product['_id'], pp.availablity, pp.bundel_sku, pp.discount, pp.doelgroep, pp.eenheid, pp.factor,
                  pp.folder_actief, pp.gebruik, pp.geschiktvoor, pp.geursoort, pp.huidconditie, pp.huidtype,
                  pp.huidtypegezicht, pp.inhoud, pp.klacht, pp.kleur, pp.leeftijd, pp.mid, pp.online_only, pp.serie,
@@ -143,7 +157,8 @@ def create_tables():
         print(e)
 
     try:
-        cursor.execute("CREATE TABLE product_prices (product_id varchar PRIMARY KEY,discount float,mrsp float,selling_price float)")
+        cursor.execute(
+            "CREATE TABLE product_prices (product_id varchar PRIMARY KEY,discount float,mrsp float,selling_price float)")
     except psycopg2.errors.DuplicateTable as e:
         connection.rollback()
         print(e)
@@ -164,7 +179,7 @@ def create_tables():
 
     try:
         cursor.execute(
-            "CREATE TABLE profiles (profile_id varchar PRIMARY KEY, unique_hash boolean, latest_activity timestamp, latest_visit int)")
+            "CREATE TABLE profiles (profile_id varchar PRIMARY KEY, unique_hash boolean, latest_activity timestamp, latest_visit int8)")
     except psycopg2.errors.DuplicateTable as e:
         connection.rollback()
         print(e)
@@ -199,10 +214,6 @@ def create_tables():
     except psycopg2.errors.DuplicateTable as e:
         connection.rollback()
         print(e)
-
-
-
-
 
     # TODO:
     # create table stock
