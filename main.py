@@ -6,8 +6,9 @@ client = pymongo.MongoClient(port=27017)
 db = db_auth.getMongoDatabase(client)
 
 
+
 products = db.products.find({})
-profiles = db.profiles.find({})
+profiles = db.visitors.find({})
 
 print('Database tables aan het aanmaken')
 database.create_tables()

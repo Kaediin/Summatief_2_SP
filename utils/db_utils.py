@@ -178,6 +178,25 @@ def create_tables():
         connection.rollback()
         print(e)
 
+    close_db_connection()
+    open_db_connection()
+
+    try:
+        cursor.execute(
+            "CREATE TABLE profile_order (profile_id varchar primary key, latest timestamp, count float, first timestamp)")
+    except psycopg2.errors.DuplicateTable as e:
+        connection.rollback()
+        print(e)
+
+    try:
+        cursor.execute(
+            "CREATE TABLE order_id (profile_id varchar, order_number serial, order_id float, primary key(profile_id,order_number))")
+    except psycopg2.errors.DuplicateTable as e:
+        connection.rollback()
+        print(e)
+
+
+
 
 
     # TODO:
