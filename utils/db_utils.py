@@ -1,4 +1,4 @@
-import psycopg2
+import psycopg2, timeit
 import utils.model_utils as model_utils
 import utils.db_auth
 from models.product_properties import ProductProperties
@@ -29,7 +29,18 @@ def close_db_connection():
 def fill_db(products, profiles):
     open_db_connection()
 
+    n_products = products.count()
+    n_profiles = profiles.count()
+
+    count_products = 0
+    count_profiles = 0
+
+
     for product in products:
+        count_products += 1
+        if count_products % 10000 == 0 or count_products == n_products or count_products == 1:
+            print(f'Products: {count_products}/{n_products}')
+
         try:
             cursor.execute(
                 "insert into products (product_id, brand, category, color, deeplink, description, fast_mover, flavor, gender, herhaalaankopen, name, predict_out_of_stock_date, recommendable, size) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
@@ -38,10 +49,10 @@ def fill_db(products, profiles):
                      product['gender'], product['herhaalaankopen'], product['name'],
                      product['predict_out_of_stock_date'], product['recommendable'], product['size']))
         except KeyError as error:
-            print(f'KeyError: {error}')
+            # print(f'KeyError: {error}')
             continue
         except psycopg2.errors.UniqueViolation as error:
-            print(f'UniqueViolation: {error}')
+            # print(f'UniqueViolation: {error}')
             connection.rollback()
             continue
         try:
@@ -72,6 +83,10 @@ def fill_db(products, profiles):
             continue
 
     for profile in profiles:
+        count_profiles += 1
+        if count_profiles % 100000 == 0 or count_profiles == n_profiles or count_profiles == 1:
+            print(f'Profiles: {count_profiles}/{n_profiles}')
+
         try:
             profile_id = str(profile['_id'])
             cursor.execute(
