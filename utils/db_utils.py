@@ -30,10 +30,12 @@ def fill_db(products, profiles, sessions):
     open_db_connection()
 
     n_products = products.count()
+    n_sessions = sessions.count()
     n_profiles = profiles.count()
 
     count_products = 0
     count_profiles = 0
+    count_sessions = 0
 
     for product in products:
         count_products += 1
@@ -48,10 +50,10 @@ def fill_db(products, profiles, sessions):
                      model_utils.get_product_property(product, 'gender'), model_utils.get_product_property(product, 'herhaalaankopen'), model_utils.get_product_property(product, 'name' ),
                      model_utils.get_product_property(product,'predict_out_of_stock_date' ), model_utils.get_product_property(product, 'recommendable' ), model_utils.get_product_property(product, 'size')))
         except KeyError as error:
-            print(f'KeyError: {error}')
+            # print(f'KeyError: {error}')
             continue
         except psycopg2.errors.UniqueViolation as error:
-            print(f'UniqueViolation: {error}')
+            # print(f'UniqueViolation: {error}')
             connection.rollback()
             continue
         try:
@@ -101,6 +103,9 @@ def fill_db(products, profiles, sessions):
 
 
     for session in sessions:
+        count_sessions += 1
+        if count_sessions % 10000 == 0 or count_sessions == n_sessions or count_sessions == 1:
+            print(f'Sessions: {count_sessions}/{n_sessions}')
         temp_list = []
         temp_list_unique = []
 
@@ -139,7 +144,7 @@ def assign_relations():
     cursor.execute("ALTER TABLE product_categories ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
     cursor.execute("ALTER TABLE product_prices ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
     cursor.execute("ALTER TABLE product_properties ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
-    cursor.execute("ALTER TABLE product_in_order ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
+    # cursor.execute("ALTER TABLE product_in_order ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
 
 
     close_db_connection()
