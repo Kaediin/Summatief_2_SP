@@ -53,7 +53,6 @@ def fill_db(products):
 
 
         except (Exception, psycopg2.Error) as error:
-            connection.rollback()
             print(error)
             pass
 
@@ -175,14 +174,6 @@ def create_tables():
     try:
         cursor.execute(
             "CREATE TABLE product_sm (product_id varchar, last_updated timestamp, type varchar, is_active boolean, PRIMARY KEY (product_id))")
-    except psycopg2.errors.DuplicateTable as e:
-        connection.rollback()
-        print(e)
-
-
-    try:
-        cursor.execute(
-            "CREATE TABLE profile_order (profile_id varchar primary key, latest timestamp, count integer, first timestamp)")
     except psycopg2.errors.DuplicateTable as e:
         connection.rollback()
         print(e)
