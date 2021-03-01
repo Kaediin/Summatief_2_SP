@@ -53,6 +53,7 @@ def fill_db(products):
 
 
         except (Exception, psycopg2.Error) as error:
+            connection.rollback()
             print(error)
             pass
 
