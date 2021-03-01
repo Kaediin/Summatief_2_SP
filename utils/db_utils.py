@@ -30,7 +30,6 @@ def fill_db(products, profiles):
     open_db_connection()
 
     for product in products:
-
         try:
             cursor.execute(
                 "insert into products (product_id, brand, category, color, deeplink, description, fast_mover, flavor, gender, herhaalaankopen, name, predict_out_of_stock_date, recommendable, size) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
@@ -38,27 +37,39 @@ def fill_db(products, profiles):
                      product['description'], product['flavor'], product['flavor'],
                      product['gender'], product['herhaalaankopen'], product['name'],
                      product['predict_out_of_stock_date'], product['recommendable'], product['size']))
-
+        except KeyError as error:
+            print(f'KeyError: {error}')
+            continue
+        except psycopg2.errors.UniqueViolation as error:
+            print(f'UniqueViolation: {error}')
+            connection.rollback()
+            continue
+        try:
             cursor.execute(
                 "insert into product_prices (product_id, discount, mrsp, selling_price) values (%s, %s, %s, %s)",
                 (product['_id'], product['price']['discount'], product['price']['mrsp'],
                  product['price']['selling_price']))
+        except (Exception, psycopg2.Error) as error:
+            continue
 
             insert_product_properties(product, cursor)
-
+        try:
             cursor.execute(
                 "INSERT INTO product_sm (product_id, last_updated, type, is_active) VALUES (%s, %s, %s, %s)",
                 (product['_id'], product['sm']['last_updated'], product['sm']['type'], product['sm']['is_active']))
+        except (Exception, psycopg2.Error) as error:
+            continue
 
+        try:
             cursor.execute(
                 "INSERT INTO product_categories (product_id, category, sub_category, sub_sub_category, sub_sub_sub_category) VALUES (%s, %s, %s, %s, %s)",
-                (product['_id'], model_utils.get_product_property(product, 'category'), model_utils.get_product_property(product, 'sub_category'), model_utils.get_product_property(product, 'sub_sub_category'), model_utils.get_product_property(product, 'sub_sub_sub_category'))
+                (product['_id'], model_utils.get_product_property(product, 'category'),
+                 model_utils.get_product_property(product, 'sub_category'),
+                 model_utils.get_product_property(product, 'sub_sub_category'),
+                 model_utils.get_product_property(product, 'sub_sub_sub_category'))
             )
-
         except (Exception, psycopg2.Error) as error:
-            print(error)
-            connection.rollback()
-            pass
+            continue
 
     for profile in profiles:
         try:
