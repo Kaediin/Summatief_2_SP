@@ -29,6 +29,8 @@ def close_db_connection():
 def fill_db(products, profiles, sessions):
     open_db_connection()
 
+    product_id_list = []
+
     n_products = products.count()
     n_sessions = sessions.count()
     n_profiles = profiles.count()
@@ -49,6 +51,9 @@ def fill_db(products, profiles, sessions):
                      model_utils.get_product_property(product, 'description'), model_utils.get_product_property(product, 'fast_mover'), model_utils.get_product_property(product, 'flavor' ),
                      model_utils.get_product_property(product, 'gender'), model_utils.get_product_property(product, 'herhaalaankopen'), model_utils.get_product_property(product, 'name' ),
                      model_utils.get_product_property(product,'predict_out_of_stock_date' ), model_utils.get_product_property(product, 'recommendable' ), model_utils.get_product_property(product, 'size')))
+
+            product_id_list.append(product['_id'])
+
         except KeyError as error:
             # print(f'KeyError: {error}')
             continue
@@ -111,6 +116,11 @@ def fill_db(products, profiles, sessions):
 
         try:
             for id in session['order']['products']:
+
+                # voer dit alleen uit als het product_id in orders ook in de products tabel zit. Anders kunnen we geen foreign keys toekennen
+                if id['id'] not in product_id_list:
+                    continue
+
                 temp_list.append(id['id'])
 
             [temp_list_unique.append(e) for e in temp_list if e not in temp_list_unique]
@@ -144,7 +154,7 @@ def assign_relations():
     cursor.execute("ALTER TABLE product_categories ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
     cursor.execute("ALTER TABLE product_prices ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
     cursor.execute("ALTER TABLE product_properties ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
-    # cursor.execute("ALTER TABLE product_in_order ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
+    cursor.execute("ALTER TABLE product_in_order ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
 
 
     close_db_connection()
