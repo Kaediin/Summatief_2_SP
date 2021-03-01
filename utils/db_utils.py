@@ -158,73 +158,107 @@ def insert_product_properties(product, cursor):
 
 def create_tables():
     open_db_connection()
-    try:
-        cursor.execute(
-            "CREATE TABLE products (product_id varchar PRIMARY KEY,brand varchar, category varchar, color varchar,"
-            "deeplink varchar, description varchar, fast_mover boolean, flavor varchar, gender varchar,"
-            " herhaalaankopen boolean, name varchar, predict_out_of_stock_date date, recommendable boolean, size varchar)")
-    except psycopg2.errors.DuplicateTable as e:
-        connection.rollback()
-        print(e)
 
-    try:
-        cursor.execute(
-            "CREATE TABLE product_prices (product_id varchar PRIMARY KEY,discount float,mrsp float,selling_price float)")
-    except psycopg2.errors.DuplicateTable as e:
-        connection.rollback()
-        print(e)
+    tables = {
+        'products': [
+            ('product_id', 'varchar PRIMARY KEY'),
+            ('brand', 'varchar'),
+            ('category', 'varchar'),
+            ('color', 'varchar'),
+            ('deeplink', 'varchar'),
+            ('description', 'varchar'),
+            ('fast_mover', 'boolean'),
+            ('flavor', 'varchar'),
+            ('gender', 'varchar'),
+            ('herhaalaankopen', 'boolean'),
+            ('name', 'varchar'),
+            ('predict_out_of_stock_date', 'varchar'),
+            ('recommendable', 'boolean'),
+            ('size', 'varchar')
+        ],
+        'product_prices': [
+            ('product_id varchar', 'PRIMARY KEY'),
+            ('discount', 'float'),
+            ('mrsp', 'float'),
+            ('selling_price', 'float')
+        ],
+        'product_categories': [
+            ('product_id', 'varchar PRIMARY KEY'),
+            ('category', 'varchar'),
+            ('sub_category', 'varchar'),
+            ('sub_sub_category', 'varchar'),
+            ('sub_sub_sub_category', 'varchar'),
+        ],
+        'product_properties': [
+            ('product_id', 'varchar PRIMARY KEY'),
+            ('availability', 'varchar NULL'),
+            ('bundel_sku', 'varchar NULL'),
+            ('discount', 'varchar NULL'),
+            ('doelgroep', 'varchar NULL'),
+            ('eenheid', 'varchar NULL'),
+            ('factor', 'varchar NULL'),
+            ('folder_actief', 'varchar NULL'),
+            ('gebruik', 'varchar NULL'),
+            ('geschiktvoor', 'varchar NULL'),
+            ('geursoort', 'varchar NULL'),
+            ('huidconditie', 'varchar NULL'),
+            ('huidtype', 'varchar NULL'),
+            ('huidtypegezicht', 'varchar NULL'),
+            ('inhoud', 'varchar NULL'),
+            ('klacht', 'varchar NULL'),
+            ('kleur', 'varchar NULL'),
+            ('leeftijd', 'varchar NULL'),
+            ('mid', 'varchar NULL'),
+            ('online_only', 'varchar NULL'),
+            ('serie', 'varchar NULL'),
+            ('shopcart_promo_item', 'varchar NULL'),
+            ('shopcart_promo_price', 'varchar NULL'),
+            ('soort', 'varchar NULL'),
+            ('soorthaarverzorging', 'varchar NULL'),
+            ('soortmondverzorging', 'varchar NULL'),
+            ('sterkte', 'varchar NULL'),
+            ('stock', 'varchar NULL'),
+            ('tax', 'varchar NULL'),
+            ('type', 'varchar NULL'),
+            ('typehaarkleuring', 'varchar NULL'),
+            ('typetandenborstel', 'varchar NULL'),
+            ('variant', 'varchar NULL'),
+            ('waterproof', 'varchar NULL'),
+            ('weekdeal', 'boolean'),
+            ('weekdeal_from', 'varchar NULL'),
+            ('weekdeal_to', 'varchar NULL')
+        ],
+        'profiles': [
+            ('profile_id', 'varchar PRIMARY KEY'),
+            ('unique_hash', 'boolean'),
+            ('latest_activity', 'timestamp'),
+            ('latest_visit', 'int8')
+        ],
+        'product_sm': [
+            ('product_id', 'varchar PRIMARY KEY'),
+            ('last_updated', 'timestamp'),
+            ('type', 'varchar'),
+            ('is_active', 'boolean')
+        ],
+        'profile_order': [
+            ('profile_id', 'varchar PRIMARY KEY'),
+            ('latest', 'timestamp'),
+            ('count', 'float'),
+            ('first', 'timestamp')
+        ],
+        'order_id': [
+            ('profile_id', 'varchar'),
+            ('order_number', 'serial, PRIMARY KEY(profile_id, order_number)'),
+            ('order_id', 'float')
+        ]
+    }
 
-    try:
-        cursor.execute(
-            "CREATE TABLE product_categories (product_id varchar PRIMARY KEY, category varchar, sub_category varchar, sub_sub_category varchar, sub_sub_sub_category varchar)")
-    except psycopg2.errors.DuplicateTable as e:
-        connection.rollback()
-        print(e)
-
-    try:
-        cursor.execute(
-            "CREATE TABLE product_properties( product_id varchar primary key, availability varchar NULL, bundel_sku varchar NULL, discount varchar NULL, doelgroep varchar NULL, eenheid varchar NULL, factor varchar NULL, folder_actief varchar NULL, gebruik varchar NULL, geschiktvoor varchar NULL, geursoort varchar NULL, huidconditie varchar NULL, huidtype varchar NULL, huidtypegezicht varchar NULL, inhoud varchar NULL, klacht varchar NULL, kleur varchar NULL, leeftijd varchar NULL, mid varchar NULL, online_only varchar NULL, serie varchar NULL, shopcart_promo_item varchar NULL, shopcart_promo_price varchar NULL, soort varchar NULL, soorthaarverzorging varchar NULL, soortmondverzorging varchar NULL, sterkte varchar NULL, stock varchar NULL, tax varchar NULL, type varchar NULL, typehaarkleuring varchar NULL, typetandenborstel varchar NULL, variant varchar NULL, waterproof varchar NULL, weekdeal boolean NULL, weekdeal_from varchar NULL, weekdeal_to varchar NULL)")
-    except psycopg2.errors.DuplicateTable as e:
-        connection.rollback()
-        print(e)
-
-    try:
-        cursor.execute(
-            "CREATE TABLE profiles (profile_id varchar PRIMARY KEY, unique_hash boolean, latest_activity timestamp, latest_visit int8)")
-    except psycopg2.errors.DuplicateTable as e:
-        connection.rollback()
-        print(e)
-
-    # try:
-    #     cursor.execute(
-    #         "CREATE TABLE product_stock (product_id varchar, date timestamp NOT NULL, stock_level int NOT NULL, PRIMARY KEY (product_id, date))")
-    # except psycopg2.errors.DuplicateTable as e:
-    #     connection.rollback()
-    #     print(e)
-
-    try:
-        cursor.execute(
-            "CREATE TABLE product_sm (product_id varchar, last_updated timestamp, type varchar, is_active boolean, PRIMARY KEY (product_id))")
-    except psycopg2.errors.DuplicateTable as e:
-        connection.rollback()
-        print(e)
-
-    close_db_connection()
-    open_db_connection()
-
-    try:
-        cursor.execute(
-            "CREATE TABLE profile_order (profile_id varchar primary key, latest timestamp, count float, first timestamp)")
-    except psycopg2.errors.DuplicateTable as e:
-        connection.rollback()
-        print(e)
-
-    try:
-        cursor.execute(
-            "CREATE TABLE order_id (profile_id varchar, order_number serial, order_id float, primary key(profile_id,order_number))")
-    except psycopg2.errors.DuplicateTable as e:
-        connection.rollback()
-        print(e)
+    for table in tables:
+        try:
+            cursor.execute(f"CREATE TABLE {table} ({', '.join(map(lambda i: ' '.join(i), tables[table]))})")
+        except psycopg2.errors.DuplicateTable as e:
+            connection.rollback()
+            print(e)
 
     # TODO:
     # create table stock
