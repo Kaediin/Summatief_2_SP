@@ -107,8 +107,6 @@ def fill_db(products, profiles, sessions):
             pass
 
 
-
-    # zet alle unieke products per bestelling in de DB
     for session in sessions:
         count_sessions += 1
         if count_sessions % 10000 == 0 or count_sessions == n_sessions or count_sessions == 1:
@@ -120,20 +118,25 @@ def fill_db(products, profiles, sessions):
             for id in session['order']['products']:
 
                 # voer dit alleen uit als het product_id in orders ook in de products tabel zit. Anders kunnen we geen foreign keys toekennen
-                if id['id'] in product_id_list:
+                if id['id'] not in product_id_list:
+                    continue
 
-                    temp_list.append(id['id'])
-                    [temp_list_unique.append(e) for e in temp_list if e not in temp_list_unique]
+                temp_list.append(id['id'])
 
-                    for id in temp_list_unique:
-                        cursor.execute(
+            [temp_list_unique.append(e) for e in temp_list if e not in temp_list_unique]
+
+            for id in temp_list_unique:
+                try:
+
+                    cursor.execute(
                         "INSERT INTO product_in_order (session_id, product_id) VALUES (%s, %s)",
                         (str(session['_id']), id))
-                else:
-                    continue
+                except (Exception, psycopg2.Error) as error:
+                        print(error)
+                        connection.rollback()
+                        continue
+
         except (Exception, psycopg2.Error) as error:
-            print(error)
-            connection.rollback()
             pass
 
     close_db_connection()
@@ -147,6 +150,7 @@ def assign_relations():
     cursor.execute("ALTER TABLE product_categories ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
     cursor.execute("ALTER TABLE product_prices ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
     cursor.execute("ALTER TABLE product_properties ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
+    # cursor.execute("ALTER TABLE product_in_order ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
     cursor.execute("ALTER TABLE product_in_order ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
 
 
@@ -319,3 +323,4 @@ def create_tables():
             print(e)
 
     close_db_connection()
+
