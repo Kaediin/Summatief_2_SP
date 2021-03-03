@@ -324,3 +324,8 @@ def create_tables():
 
     close_db_connection()
 
+
+def equalproperties(table, properties):
+    quoted = lambda w: "'" + w + "'"  # can change, is for adding '' around a word, as f-strings do not like backslashes
+    # try:
+    cursor.execute(f"SELECT * FROM {table} WHERE {' AND '.join([e + ' = ' + quoted(properties[e]) for e in properties])}")
