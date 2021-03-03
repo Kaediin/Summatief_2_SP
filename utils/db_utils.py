@@ -88,23 +88,6 @@ def fill_db(products, profiles, sessions):
         except (Exception, psycopg2.Error) as error:
             continue
 
-    for profile in profiles:
-        count_profiles += 1
-        if count_profiles % 100000 == 0 or count_profiles == n_profiles or count_profiles == 1:
-            print(f'Profiles: {count_profiles}/{n_profiles}')
-
-        try:
-            profile_id = str(profile['_id'])
-            cursor.execute(
-                "insert into profiles (profile_id, unique_hash, latest_activity, latest_visit) values (%s, %s, %s, %s)",
-                (profile_id,
-                 model_utils.get_product_property(profile, 'unique_hash'),
-                 model_utils.get_product_property(profile, 'latest_activity'),
-                 model_utils.get_product_property(profile, 'latest_visit')))
-        except (Exception, psycopg2.Error) as error:
-            print(error)
-            connection.rollback()
-            pass
 
 
     for session in sessions:
@@ -150,7 +133,6 @@ def assign_relations():
     cursor.execute("ALTER TABLE product_categories ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
     cursor.execute("ALTER TABLE product_prices ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
     cursor.execute("ALTER TABLE product_properties ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
-    # cursor.execute("ALTER TABLE product_in_order ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
     cursor.execute("ALTER TABLE product_in_order ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
 
 
@@ -286,28 +268,11 @@ def create_tables():
             ('weekdeal_from', 'varchar NULL'),
             ('weekdeal_to', 'varchar NULL')
         ],
-        'profiles': [
-            ('profile_id', 'varchar PRIMARY KEY'),
-            ('unique_hash', 'boolean'),
-            ('latest_activity', 'timestamp'),
-            ('latest_visit', 'int8')
-        ],
         'product_sm': [
             ('product_id', 'varchar PRIMARY KEY'),
             ('last_updated', 'timestamp'),
             ('type', 'varchar'),
             ('is_active', 'boolean')
-        ],
-        'profile_order': [
-            ('profile_id', 'varchar PRIMARY KEY'),
-            ('latest', 'timestamp'),
-            ('count', 'float'),
-            ('first', 'timestamp')
-        ],
-        'order_id': [
-            ('profile_id', 'varchar'),
-            ('order_number', 'serial, PRIMARY KEY(profile_id, order_number)'),
-            ('order_id', 'float')
         ],
         'product_in_order': [
             ('session_id', 'varchar'),
@@ -324,6 +289,11 @@ def create_tables():
 
     close_db_connection()
 
+
+def equalproperties(table, properties):
+    quoted = lambda w: "'" + w + "'"  # can change, is for adding '' around a word, as f-strings do not like backslashes
+    # try:
+    cursor.execute(f"SELECT * FROM {table} WHERE {' AND '.join([e + ' = ' + quoted(properties[e]) for e in properties])}")
 
 def equalproperties(table, properties):
     quoted = lambda w: "'" + w + "'"  # can change, is for adding '' around a word, as f-strings do not like backslashes
