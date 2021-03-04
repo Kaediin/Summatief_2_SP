@@ -117,6 +117,7 @@ def fill_db(products, profiles, sessions):
 
                 temp_list.append(id['id'])
 
+                # we hoeven voor ons algoritme alleen te weten welke producten samen worden gekocht, product hoeveelheden zijn hiervoor niet relevant
             [temp_list_unique.append(e) for e in temp_list if e not in temp_list_unique]
 
             for id in temp_list_unique:
