@@ -3,3 +3,4 @@ venv
 venv_john
 .idea
 controller/__pycache__/db_utils.cpython-38.pyc
+__pycache__
