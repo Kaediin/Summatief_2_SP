@@ -8,6 +8,8 @@ cursor = None
 
 
 def open_db_connection():
+    """Opens the connection to the SQL database"""
+
     global connection, cursor
     try:
         connection = utils.db_auth.getPostgreSQLConnection(psycopg2)
@@ -18,6 +20,8 @@ def open_db_connection():
 
 
 def close_db_connection():
+    """Closes the connection to the SQL database and commits the queries"""
+
     # closing database connection.
     if connection:
         connection.commit()
@@ -27,6 +31,13 @@ def close_db_connection():
 
 
 def fill_db(products, profiles, sessions):
+    """Fill the tables in the SQL database with data from the Mongo database
+
+        :param products: data from the 'products' data file
+        :param profiles: data from the 'profiles/visitors' data file
+        :param sessions: data from the 'sessions' data file
+        """
+
     open_db_connection()
 
     product_id_list = []
@@ -126,6 +137,8 @@ def fill_db(products, profiles, sessions):
 
 
 def assign_relations():
+    """Assigns foreign keys to relevant tables"""
+
     open_db_connection()
 
 
@@ -140,6 +153,12 @@ def assign_relations():
 
 
 def insert_product_properties(product, cursor):
+    """Special function to fill the product_properties table
+
+        :param product: data from the 'products' data file
+
+        :param cursor: database connection object
+        """
     try:
         properties = product['properties']
         pp = ProductProperties(
@@ -197,6 +216,8 @@ def insert_product_properties(product, cursor):
 
 
 def create_tables():
+    """Creates the tables for the SQL database"""
+
     open_db_connection()
 
     tables = {
@@ -290,12 +311,23 @@ def create_tables():
     close_db_connection()
 
 
-def equalproperties(table, properties):
-    quoted = lambda w: "'" + w + "'"  # can change, is for adding '' around a word, as f-strings do not like backslashes
-    # try:
-    cursor.execute(f"SELECT * FROM {table} WHERE {' AND '.join([e + ' = ' + quoted(properties[e]) for e in properties])}")
+def equalproperties(table, properties, returncols=["*"]):
+    """Return a list of table entries based on the values of certain columns
 
-def equalproperties(table, properties):
+    :param table: The table to execute the SQL on (str)
+    :param properties: A dict of table columns as keys and their required values
+    :param returncols: A list of columns to return (leave empty for *)
+    :return: A list of table entries
+    """
+    open_db_connection()
     quoted = lambda w: "'" + w + "'"  # can change, is for adding '' around a word, as f-strings do not like backslashes
-    # try:
-    cursor.execute(f"SELECT * FROM {table} WHERE {' AND '.join([e + ' = ' + quoted(properties[e]) for e in properties])}")
+    try:
+        cursor.execute(f"SELECT {', '.join(returncols)} FROM {table} WHERE {' AND '.join([e + ' = ' + quoted(properties[e]) for e in properties])}")
+        return cursor.fetchall()
+    except psycopg2.errors.UndefinedTable as e:
+        print(e)
+    close_db_connection()
+
+# Example:
+# equalproperties("products", {"brand": "Airwick"}, ["product_id", "name"])
+# will return a list of product_id's and names corresponding to entries who's brand equals "Airwick"
