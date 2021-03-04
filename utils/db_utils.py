@@ -58,18 +58,26 @@ def fill_db(products, profiles, sessions):
         try:
             cursor.execute(
                 "insert into products (product_id, brand, category, color, deeplink, description, fast_mover, flavor, gender, herhaalaankopen, name, predict_out_of_stock_date, recommendable, size) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-                "", ( model_utils.get_product_property(product, '_id'), model_utils.get_product_property(product, 'brand'), model_utils.get_product_property(product, 'category'), model_utils.get_product_property(product, 'color'), model_utils.get_product_property(product, 'deeplink' ),
-                     model_utils.get_product_property(product, 'description'), model_utils.get_product_property(product, 'fast_mover'), model_utils.get_product_property(product, 'flavor' ),
-                     model_utils.get_product_property(product, 'gender'), model_utils.get_product_property(product, 'herhaalaankopen'), model_utils.get_product_property(product, 'name' ),
-                     model_utils.get_product_property(product,'predict_out_of_stock_date' ), model_utils.get_product_property(product, 'recommendable' ), model_utils.get_product_property(product, 'size')))
+                "", (
+                model_utils.get_product_property(product, '_id'), model_utils.get_product_property(product, 'brand'),
+                model_utils.get_product_property(product, 'category'),
+                model_utils.get_product_property(product, 'color'),
+                model_utils.get_product_property(product, 'deeplink'),
+                model_utils.get_product_property(product, 'description'),
+                model_utils.get_product_property(product, 'fast_mover'),
+                model_utils.get_product_property(product, 'flavor'),
+                model_utils.get_product_property(product, 'gender'),
+                model_utils.get_product_property(product, 'herhaalaankopen'),
+                model_utils.get_product_property(product, 'name'),
+                model_utils.get_product_property(product, 'predict_out_of_stock_date'),
+                model_utils.get_product_property(product, 'recommendable'),
+                model_utils.get_product_property(product, 'size')))
 
             product_id_list.append(product['_id'])
 
         except KeyError as error:
-            # print(f'KeyError: {error}')
             continue
         except psycopg2.errors.UniqueViolation as error:
-            # print(f'UniqueViolation: {error}')
             connection.rollback()
             continue
         try:
@@ -80,7 +88,7 @@ def fill_db(products, profiles, sessions):
         except (Exception, psycopg2.Error) as error:
             continue
 
-            insert_product_properties(product, cursor)
+        insert_product_properties(product, cursor)
         try:
             cursor.execute(
                 "INSERT INTO product_sm (product_id, last_updated, type, is_active) VALUES (%s, %s, %s, %s)",
@@ -98,8 +106,6 @@ def fill_db(products, profiles, sessions):
             )
         except (Exception, psycopg2.Error) as error:
             continue
-
-
 
     for session in sessions:
         count_sessions += 1
@@ -127,9 +133,9 @@ def fill_db(products, profiles, sessions):
                         "INSERT INTO product_in_order (session_id, product_id) VALUES (%s, %s)",
                         (str(session['_id']), id))
                 except (Exception, psycopg2.Error) as error:
-                        print(error)
-                        connection.rollback()
-                        continue
+                    print(error)
+                    connection.rollback()
+                    continue
 
         except (Exception, psycopg2.Error) as error:
             pass
@@ -142,22 +148,18 @@ def assign_relations():
 
     open_db_connection()
 
-
     cursor.execute("ALTER TABLE product_sm ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
     cursor.execute("ALTER TABLE product_categories ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
     cursor.execute("ALTER TABLE product_prices ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
     cursor.execute("ALTER TABLE product_properties ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
     cursor.execute("ALTER TABLE product_in_order ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
 
-
     close_db_connection()
 
 
 def insert_product_properties(product, cursor):
     """Special function to fill the product_properties table
-
         :param product: data from the 'products' data file
-
         :param cursor: database connection object
         """
     try:
@@ -213,7 +215,7 @@ def insert_product_properties(product, cursor):
             connection.rollback()
             pass
     except KeyError:
-        print(f'No properties found for id: {product}')
+        pass
 
 
 def create_tables():
@@ -307,7 +309,6 @@ def create_tables():
             cursor.execute(f"CREATE TABLE {table} ({', '.join(map(lambda i: ' '.join(i), tables[table]))})")
         except psycopg2.errors.DuplicateTable as e:
             connection.rollback()
-            print(e)
 
     close_db_connection()
 
@@ -319,16 +320,17 @@ def equalproperties(table, properties, returncols=["*"]):
     :param properties: A dict of table columns as keys and their required values
     :param returncols: A list of columns to return (leave empty for *)
     :return: A list of table entries
+
+    # Example:
+    # equalproperties("products", {"brand": "Airwick"}, ["product_id", "name"])
+    # will return a list of product_id's and names corresponding to entries who's brand equals "Airwick
     """
     open_db_connection()
     quoted = lambda w: "'" + w + "'"  # can change, is for adding '' around a word, as f-strings do not like backslashes
     try:
-        cursor.execute(f"SELECT {', '.join(returncols)} FROM {table} WHERE {' AND '.join([e + ' = ' + quoted(properties[e]) for e in properties])}")
+        cursor.execute(
+            f"SELECT {', '.join(returncols)} FROM {table} WHERE {' AND '.join([e + ' = ' + quoted(properties[e]) for e in properties])}")
         return cursor.fetchall()
     except Exception as e:
-        print(e)
+        pass
     close_db_connection()
-
-# Example:
-# equalproperties("products", {"brand": "Airwick"}, ["product_id", "name"])
-# will return a list of product_id's and names corresponding to entries who's brand equals "Airwick"
