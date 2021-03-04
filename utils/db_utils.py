@@ -325,7 +325,7 @@ def equalproperties(table, properties, returncols=["*"]):
     try:
         cursor.execute(f"SELECT {', '.join(returncols)} FROM {table} WHERE {' AND '.join([e + ' = ' + quoted(properties[e]) for e in properties])}")
         return cursor.fetchall()
-    except psycopg2.errors.UndefinedTable as e:
+    except Exception as e:
         print(e)
     close_db_connection()
 
