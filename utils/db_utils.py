@@ -290,12 +290,23 @@ def create_tables():
     close_db_connection()
 
 
-def equalproperties(table, properties):
-    quoted = lambda w: "'" + w + "'"  # can change, is for adding '' around a word, as f-strings do not like backslashes
-    # try:
-    cursor.execute(f"SELECT * FROM {table} WHERE {' AND '.join([e + ' = ' + quoted(properties[e]) for e in properties])}")
+def equalproperties(table, properties, returncols=["*"]):
+    """Return a list of table entries based on the values of certain columns
 
-def equalproperties(table, properties):
+    :param table: The table to execute the SQL on (str)
+    :param properties: A dict of table columns as keys and their required values
+    :param returncols: A list of columns to return (leave empty for *)
+    :return: A list of table entries
+    """
+    open_db_connection()
     quoted = lambda w: "'" + w + "'"  # can change, is for adding '' around a word, as f-strings do not like backslashes
-    # try:
-    cursor.execute(f"SELECT * FROM {table} WHERE {' AND '.join([e + ' = ' + quoted(properties[e]) for e in properties])}")
+    try:
+        cursor.execute(f"SELECT {', '.join(returncols)} FROM {table} WHERE {' AND '.join([e + ' = ' + quoted(properties[e]) for e in properties])}")
+        return cursor.fetchall()
+    except psycopg2.errors.UndefinedTable as e:
+        print(e)
+    close_db_connection()
+
+# Example:
+# equalproperties("products", {"brand": "Airwick"}, ["product_id", "name"])
+# will return a list of product_id's and names corresponding to entries who's brand equals "Airwick"
