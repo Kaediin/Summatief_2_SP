@@ -6,6 +6,19 @@ from controller.database_predefined_values import tables
 connection = None
 cursor = None
 
+def instantiate(products, sessions):
+    print('Database tables aan het aanmaken')
+    create_tables()
+    print('Database tables zijn aangemaakt!')
+
+    print('Database producten worden gevuld.. Dit kan even duren')
+    fill_db(products, sessions)
+    print('Database producten zijn gevuld!')
+
+    print('Relaties worden toegekend')
+    assign_relations()
+    print('Relaties zijn toegekend!')
+
 def open_db_connection():
     """Opens the connection to the SQL database"""
 
@@ -245,7 +258,7 @@ def create_tables():
     close_db_connection()
 
 
-def equalproperties(table, properties, returncols=["*"]):
+def retrieve_properties(table, properties, returncols=("*")):
     """Return a list of table entries based on the values of certain columns
 
     :param table: The table to execute the SQL on (str)
@@ -254,7 +267,7 @@ def equalproperties(table, properties, returncols=["*"]):
     :return: A list of table entries
 
     Example:
-    equalproperties("products", {"brand": "Airwick"}, ["product_id", "name"])
+    retrieve_properties("products", {"brand": "Airwick"}, ["product_id", "name"])
     will return a list of product_id's and names corresponding to entries who's brand equals "Airwick
     """
     open_db_connection()
