@@ -28,7 +28,7 @@ tables = {'products': [('product_id', 'varchar PRIMARY KEY'), ('brand', 'varchar
                          ('is_active', 'boolean')],
           'product_in_order': [('session_id', 'varchar'), (
                                 'product_id', 'varchar, PRIMARY KEY(session_id, product_id)')],
-          'order_dates': [('session_id varchar', 'PRIMARY KEY'), ('session_start', 'timestamp'), ('session_end', 'timestamp')]
+          'orders': [('session_id varchar', 'PRIMARY KEY'), ('session_start', 'timestamp'), ('session_end', 'timestamp'),('buid', 'varchar')]
 
           }
 

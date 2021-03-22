@@ -8,6 +8,9 @@ db = db_auth.getMongoDatabase(client)
 products = db.products.find({})
 sessions = db.sessions.find({'has_sale': True})
 
+
+
+
 database.instantiate(products, sessions)
 
 print('Demo resultaat ophalen')

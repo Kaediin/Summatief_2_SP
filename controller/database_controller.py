@@ -65,8 +65,8 @@ def fill_db(products, sessions):
 
         try:
             cursor.execute(
-                "INSERT INTO order_dates (session_id, session_start,session_end) VALUES (%s, %s, %s)",
-                (str(session['_id']), session['session_start'], session['session_end']))
+                "INSERT INTO orders (session_id, session_start,session_end, buid) VALUES (%s, %s, %s, %s)",
+                (str(session['_id']), session['session_start'], session['session_end'], session['buid'][0]))
 
         except Exception as e:
             print(e)
