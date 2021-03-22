@@ -25,5 +25,12 @@ tables = {'products': [('product_id', 'varchar PRIMARY KEY'), ('brand', 'varchar
                                  ('variant', 'varchar NULL'), ('waterproof', 'varchar NULL'), ('weekdeal', 'boolean'),
                                  ('weekdeal_from', 'varchar NULL'), ('weekdeal_to', 'varchar NULL')],
           'product_sm': [('product_id', 'varchar PRIMARY KEY'), ('last_updated', 'timestamp'), ('type', 'varchar'),
-                         ('is_active', 'boolean')], 'product_in_order': [('session_id', 'varchar'), (
-    'product_id', 'varchar, PRIMARY KEY(session_id, product_id)')]}
+                         ('is_active', 'boolean')],
+          'product_in_order': [('session_id', 'varchar'), (
+                                'product_id', 'varchar, PRIMARY KEY(session_id, product_id)')],
+          'order_dates': [('session_id varchar', 'PRIMARY KEY'), ('session_start', 'timestamp'), ('session_end', 'timestamp')]
+
+          }
+
+
+

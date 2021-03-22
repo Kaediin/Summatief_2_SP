@@ -60,6 +60,20 @@ def fill_db(products, sessions):
     count_products = 0
     count_sessions = 0
 
+
+    for session in sessions:
+
+        try:
+            cursor.execute(
+                "INSERT INTO order_dates (session_id, session_start,session_end) VALUES (%s, %s, %s)",
+                (str(session['_id']), session['session_start'], session['session_end']))
+
+        except Exception as e:
+            print(e)
+
+    close_db_connection()
+    open_db_connection()
+
     for product in products:
         count_products += 1
         if count_products % 10000 == 0 or count_products == n_products or count_products == 1:
