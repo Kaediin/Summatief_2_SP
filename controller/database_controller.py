@@ -6,18 +6,20 @@ from controller.database_predefined_values import tables
 connection = None
 cursor = None
 
-def instantiate(products, sessions):
+
+def instantiate(products, sessions, visitors):
     print('Database tables aan het aanmaken')
     create_tables()
     print('Database tables zijn aangemaakt!')
 
     print('Database producten worden gevuld.. Dit kan even duren')
-    fill_db(products, sessions)
+    fill_db(products, sessions, visitors)
     print('Database producten zijn gevuld!')
 
     print('Relaties worden toegekend')
     assign_relations()
     print('Relaties zijn toegekend!')
+
 
 def open_db_connection():
     """Opens the connection to the SQL database"""
@@ -42,7 +44,7 @@ def close_db_connection():
         # print("PostgreSQL connection is closed")
 
 
-def fill_db(products, sessions):
+def fill_db(products, sessions, visitors):
     """Fill the tables in the SQL database with data from the Mongo database
 
         :param products: data from the 'products' data file
@@ -60,16 +62,64 @@ def fill_db(products, sessions):
     count_products = 0
     count_sessions = 0
 
+    for visitor in visitors:
+
+        try:
+            cursor.execute(
+                "INSERT INTO visitors (visitor_id, buids) VALUES (%s, %s)",
+                (str(get_product_property(visitor, '_id')), get_product_property(visitor, 'buids')))
+
+        except Exception as e:
+            connection.rollback()
+
+    close_db_connection()
+    open_db_connection()
+
+    for visitor in visitors:
+
+        recs = get_product_property(visitor, 'recommendations')
+        previously_recommended = get_product_property(visitor, 'previously_recommended')
+
+        #we replacen lege lijsten met None zodat we zeker weten dat alleen NULL/None geen resultaten oplevert
+        if previously_recommended is not None:
+            if len(previously_recommended)==0:
+                previously_recommended = None
+
+        if recs:
+            viewed_before = get_product_property(recs, 'viewed_before')
+            similars = get_product_property(recs, 'similars')
+
+            if len(viewed_before) == 0:
+                viewed_before = None
+            if len(similars) == 0:
+                similars = None
+        else:
+            viewed_before = None
+            similars = None
+
+        try:
+            cursor.execute(
+                "INSERT INTO visitor_recs (visitor_id, previously_recommended, viewed_before, similars) VALUES (%s, %s, %s, %s)",
+                (str(get_product_property(visitor, '_id')), previously_recommended,
+                 viewed_before, similars
+
+                 ))
+
+        except Exception as e:
+            print(e)
+            connection.rollback()
+
+    close_db_connection()
+    open_db_connection()
 
     for session in sessions:
-
         try:
             cursor.execute(
                 "INSERT INTO orders (session_id, session_start,session_end, buid) VALUES (%s, %s, %s, %s)",
                 (str(session['_id']), session['session_start'], session['session_end'], session['buid'][0]))
 
         except Exception as e:
-            print(e)
+            connection.rollback()
 
     close_db_connection()
     open_db_connection()

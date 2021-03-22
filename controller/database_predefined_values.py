@@ -28,7 +28,9 @@ tables = {'products': [('product_id', 'varchar PRIMARY KEY'), ('brand', 'varchar
                          ('is_active', 'boolean')],
           'product_in_order': [('session_id', 'varchar'), (
                                 'product_id', 'varchar, PRIMARY KEY(session_id, product_id)')],
-          'orders': [('session_id varchar', 'PRIMARY KEY'), ('session_start', 'timestamp'), ('session_end', 'timestamp'),('buid', 'varchar')]
+          'orders': [('session_id', 'varchar PRIMARY KEY'), ('session_start', 'timestamp'), ('session_end', 'timestamp'),('buid', 'varchar')],
+          'visitors':[('visitor_id', 'varchar PRIMARY KEY'), ('buids', 'varchar[]')],
+          'visitor_recs':[('visitor_id', 'varchar PRIMARY KEY'),('previously_recommended', 'varchar[]'),('viewed_before', 'varchar[]'),('similars', 'varchar[]')]
 
           }
 
