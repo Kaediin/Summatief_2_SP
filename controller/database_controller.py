@@ -138,49 +138,11 @@ def fill_db(products, sessions, visitors):
         except (Exception, psycopg2.Error):
             continue
 
-    for session in sessions:
-
-        count_sessions += 1
-        if count_sessions % 10000 == 0 or count_sessions == n_sessions or count_sessions == 1:
-            print(f'Sessions: {count_sessions}/{n_sessions}')
-            close_db_connection()
-            open_db_connection()
-
-        temp_list = []
-
-        try:
-            for id in session['order']['products']:
-
-                # voer dit alleen uit als het product_id in orders ook in de products tabel zit. Anders kunnen we geen foreign keys toekennen
-                if id['id'] not in product_id_list:
-                    continue
-
-                temp_list.append(id['id'])
-
-            for id in temp_list:
-                try:
-
-                    cursor.execute(
-                        "INSERT INTO product_in_order (session_id, product_id) VALUES (%s, %s)",
-                        (str(session['_id']), id))
-                except (Exception, psycopg2.Error):
-                    continue
-
-        except (Exception, psycopg2.Error):
-            pass
-
-        try:
-            cursor.execute(
-                "INSERT INTO orders (session_id, session_start,session_end, buid) VALUES (%s, %s, %s, %s)",
-                (str(session['_id']), get_product_property(session, 'session_start'),
-                 get_product_property(session, 'session_end'), get_product_property(session, 'buid')[0]))
-
-        except Exception as e:
-            pass
-
-
     close_db_connection()
     open_db_connection()
+
+    create_orders_table(sessions)
+
 
     for visitor in visitors:
 
@@ -243,7 +205,6 @@ def assign_relations():
     cursor.execute("ALTER TABLE product_categories ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
     cursor.execute("ALTER TABLE product_prices ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
     cursor.execute("ALTER TABLE product_properties ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
-    cursor.execute("ALTER TABLE product_in_order ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
 
     close_db_connection()
 
@@ -352,3 +313,42 @@ def get_product_property(product_data, key):
         return product_data[key]
     except KeyError:
         return None
+
+
+def create_orders_table(sessions):
+
+    open_db_connection()
+
+    for session in sessions:
+
+        session_id = get_product_property(session, '_id')
+        session_start = get_product_property(session, 'session_start')
+        session_end = get_product_property(session, 'session_end')
+        buid_array = get_product_property(session, 'buid')
+
+
+        if buid_array is not None:
+            buid = buid_array[0]
+        else:
+            buid = buid_array
+
+        try:
+            products_raw = session['order']['products']
+        except:
+            products_raw = None
+
+        if products_raw is not None:
+            products = [product['id'] for product in products_raw]
+
+
+        try:
+            cursor.execute(
+                "INSERT INTO orders (session_id, session_start, session_end, buid, products) VALUES (%s, %s, %s, %s,%s)",
+                (str(session_id), session_start, session_end, buid, products))
+
+        except Exception as e:
+            print(e)
+            connection.rollback()
+
+    close_db_connection()
+    open_db_connection()

@@ -2,6 +2,7 @@ import pymongo, pprint, json
 from controller import database_controller as database
 from controller import db_auth
 
+
 client = pymongo.MongoClient(port=27017)
 db = db_auth.getMongoDatabase(client)
 
