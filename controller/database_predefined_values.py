@@ -26,8 +26,8 @@ tables = {'products': [('product_id', 'varchar PRIMARY KEY'), ('brand', 'varchar
                                  ('weekdeal_from', 'varchar NULL'), ('weekdeal_to', 'varchar NULL')],
           'product_sm': [('product_id', 'varchar PRIMARY KEY'), ('last_updated', 'timestamp'), ('type', 'varchar'),
                          ('is_active', 'boolean')],
-          'product_in_order': [('session_id', 'varchar'), (
-                                'product_id', 'varchar, PRIMARY KEY(session_id, product_id)')],
+          'product_in_order': [('product_in_order_id', 'serial'),('session_id', 'varchar'), (
+                                'product_id', 'varchar, PRIMARY KEY(product_in_order_id)')],
           'orders': [('session_id', 'varchar PRIMARY KEY'), ('session_start', 'timestamp'), ('session_end', 'timestamp'),('buid', 'varchar')],
           'visitors':[('visitor_id', 'varchar PRIMARY KEY'), ('buids', 'varchar[]')],
           'visitor_recs':[('visitor_id', 'varchar PRIMARY KEY'),('previously_recommended', 'varchar[]'),('viewed_before', 'varchar[]'),('similars', 'varchar[]')]

@@ -58,67 +58,11 @@ def fill_db(products, sessions, visitors):
 
     n_products = products.count()
     n_sessions = sessions.count()
+    n_visitors = visitors.count()
 
     count_products = 0
     count_sessions = 0
-
-    for visitor in visitors:
-
-        try:
-            cursor.execute(
-                "INSERT INTO visitors (visitor_id, buids) VALUES (%s, %s)",
-                (str(get_product_property(visitor, '_id')), get_product_property(visitor, 'buids')))
-
-        except Exception as e:
-            connection.rollback()
-
-        recs = get_product_property(visitor, 'recommendations')
-        previously_recommended = get_product_property(visitor, 'previously_recommended')
-
-        # we replacen lege lijsten met None zodat we zeker weten dat alleen NULL/None geen resultaten oplevert
-        if previously_recommended is not None:
-            if len(previously_recommended) == 0:
-                previously_recommended = None
-
-        if recs:
-            viewed_before = get_product_property(recs, 'viewed_before')
-            similars = get_product_property(recs, 'similars')
-
-            if len(viewed_before) == 0:
-                viewed_before = None
-            if len(similars) == 0:
-                similars = None
-        else:
-            viewed_before = None
-            similars = None
-
-        try:
-            cursor.execute(
-                "INSERT INTO visitor_recs (visitor_id, previously_recommended, viewed_before, similars) VALUES (%s, %s, %s, %s)",
-                (str(get_product_property(visitor, '_id')), previously_recommended,
-                 viewed_before, similars
-
-                 ))
-
-        except Exception as e:
-            print(e)
-            connection.rollback()
-
-    close_db_connection()
-    open_db_connection()
-
-
-    for session in sessions:
-        try:
-            cursor.execute(
-                "INSERT INTO orders (session_id, session_start,session_end, buid) VALUES (%s, %s, %s, %s)",
-                (str(session['_id']), session['session_start'], session['session_end'], session['buid'][0]))
-
-        except Exception as e:
-            connection.rollback()
-
-    close_db_connection()
-    open_db_connection()
+    count_visitors = 0
 
     for product in products:
         count_products += 1
@@ -195,11 +139,14 @@ def fill_db(products, sessions, visitors):
             continue
 
     for session in sessions:
+
         count_sessions += 1
         if count_sessions % 10000 == 0 or count_sessions == n_sessions or count_sessions == 1:
             print(f'Sessions: {count_sessions}/{n_sessions}')
+            close_db_connection()
+            open_db_connection()
+
         temp_list = []
-        temp_list_unique = []
 
         try:
             for id in session['order']['products']:
@@ -210,23 +157,81 @@ def fill_db(products, sessions, visitors):
 
                 temp_list.append(id['id'])
 
-                # we hoeven voor ons algoritme alleen te weten welke producten samen worden gekocht, product hoeveelheden zijn hiervoor niet relevant
-            [temp_list_unique.append(e) for e in temp_list if e not in temp_list_unique]
-
-            for id in temp_list_unique:
+            for id in temp_list:
                 try:
 
                     cursor.execute(
                         "INSERT INTO product_in_order (session_id, product_id) VALUES (%s, %s)",
                         (str(session['_id']), id))
                 except (Exception, psycopg2.Error):
-                    connection.rollback()
                     continue
 
         except (Exception, psycopg2.Error):
             pass
 
+        try:
+            cursor.execute(
+                "INSERT INTO orders (session_id, session_start,session_end, buid) VALUES (%s, %s, %s, %s)",
+                (str(session['_id']), get_product_property(session, 'session_start'),
+                 get_product_property(session, 'session_end'), get_product_property(session, 'buid')[0]))
+
+        except Exception as e:
+            pass
+
+
     close_db_connection()
+    open_db_connection()
+
+    for visitor in visitors:
+
+        count_visitors += 1
+        if count_visitors % 10000 == 0 or count_visitors == n_visitors or count_visitors == 1:
+            print(f'Visitors: {count_visitors}/{n_visitors}')
+            close_db_connection()
+            open_db_connection()
+
+        recs = get_product_property(visitor, 'recommendations')
+        previously_recommended = get_product_property(visitor, 'previously_recommended')
+
+        # we replacen lege lijsten met None zodat we zeker weten dat alleen NULL/None geen resultaten oplevert
+        if previously_recommended is not None:
+            if len(previously_recommended) == 0:
+                previously_recommended = None
+
+        if recs:
+            viewed_before = get_product_property(recs, 'viewed_before')
+            similars = get_product_property(recs, 'similars')
+
+            if len(viewed_before) == 0:
+                viewed_before = None
+            if len(similars) == 0:
+                similars = None
+        else:
+            viewed_before = None
+            similars = None
+
+        try:
+            cursor.execute(
+                "INSERT INTO visitor_recs (visitor_id, previously_recommended, viewed_before, similars) VALUES (%s, %s, %s, %s)",
+                (str(get_product_property(visitor, '_id')), previously_recommended,
+                 viewed_before, similars
+
+                 ))
+
+        except Exception as e:
+            print(e)
+            connection.rollback()
+
+        try:
+            cursor.execute(
+                "INSERT INTO visitors (visitor_id, buids) VALUES (%s, %s)",
+                (str(get_product_property(visitor, '_id')), get_product_property(visitor, 'buids')))
+
+        except Exception as e:
+            connection.rollback()
+
+    close_db_connection()
+    open_db_connection()
 
 
 def assign_relations():
