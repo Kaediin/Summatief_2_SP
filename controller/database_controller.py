@@ -72,17 +72,12 @@ def fill_db(products, sessions, visitors):
         except Exception as e:
             connection.rollback()
 
-    close_db_connection()
-    open_db_connection()
-
-    for visitor in visitors:
-
         recs = get_product_property(visitor, 'recommendations')
         previously_recommended = get_product_property(visitor, 'previously_recommended')
 
-        #we replacen lege lijsten met None zodat we zeker weten dat alleen NULL/None geen resultaten oplevert
+        # we replacen lege lijsten met None zodat we zeker weten dat alleen NULL/None geen resultaten oplevert
         if previously_recommended is not None:
-            if len(previously_recommended)==0:
+            if len(previously_recommended) == 0:
                 previously_recommended = None
 
         if recs:
@@ -111,6 +106,7 @@ def fill_db(products, sessions, visitors):
 
     close_db_connection()
     open_db_connection()
+
 
     for session in sessions:
         try:
