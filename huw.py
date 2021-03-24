@@ -7,6 +7,7 @@ import pprint
 from controller import database_controller as database
 from controller import db_auth
 from model import convert_to_model
+from algorithms import profiles
 
 # The secret key used for session encryption is randomly generated every time
 # the server is started up. This means all session data (including the 
@@ -255,10 +256,9 @@ class HUWebshop(object):
     def recommendations_relevant_combination(self, p_id):
         try:
             return [convert_to_model.toProduct(
-                database.execute_query("select * from products where product_id = %s", (e,), get_results=True)[0]) for e
+                database.execute_query("select * from products where product_id = %s", (e,))[0]) for e
                 in
-                database.execute_query("select * from order_based_recs where product_id = %s", (str(p_id),),
-                                       get_results=True)[0][1]]
+                database.execute_query("select * from order_based_recs where product_id = %s", (str(p_id),))[0][1]]
         except Exception:
             pass
 
@@ -267,16 +267,16 @@ class HUWebshop(object):
             Get the recommended items from the database given a product ID
         """
         product_id = p_id.replace("'", "''")
-        results = database.execute_query("select recommendations from simplerecs where product_id = %s", (product_id,), get_results=True)
+        results = database.execute_query("select recommendations from simplerecs where product_id = %s", (product_id,))
         recs = [convert_to_model.toProduct(
-                database.execute_query("select * from products where product_id = %s", (e,), get_results=True)[0]) for e in results[0][0]]
+            database.execute_query("select * from products where product_id = %s", (e,))[0]) for e in
+            results[0][0]]
         return recs
-
 
     def recommendations_seasonal(self, date, limit=4):
         pass
 
-    def recommendations_profile(self, limit=4):
+    def recommendations_profile(self, profile_id, limit=4):
         """ This function returns the recommendations from the provided page
         and context, by sending a request to the designated recommendation
         service. At the moment, it only transmits the profile ID and the number
@@ -292,9 +292,11 @@ class HUWebshop(object):
         #     querycursor = self.database.products.find(queryfilter, self.productfields)
         #     resultlist = list(map(self.prepproduct, list(querycursor)))
         #     return resultlist
-        result = database.retrieve_properties("products", {"brand": "Andrelon"})[:limit]
-        prods = [convert_to_model.toProduct(e) for e in result]
-        return prods
+        prods = profiles.get_recs(profile_id)
+        prods_objects = [convert_to_model.toProduct(e[0]) for e in prods]
+        # result = database.retrieve_properties("products", {"brand": "Andrelon"})[:limit]
+        # prods = [convert_to_model.toProduct(e) for e in result]
+        return prods_objects
 
     """ ..:: Full Page Endpoints ::.. """
 
@@ -316,12 +318,18 @@ class HUWebshop(object):
         querycursor.limit(session['items_per_page'])
 
         """ Get all products (this need to be based on profile) """
-        prodlist = [convert_to_model.toProduct(e) for e in
-                    database.retrieve_properties("products", {"brand": "Axe"})[:4]]
+        try:
+            profile_id = session['profile_id'] if session['profile_id'] is not None else '5a393d68ed295900010384ca'
+            prodlist = self.recommendations_profile(profile_id)
+        except Exception as e:
+            print(e.args)
+            print('Running default')
+            prodlist = [convert_to_model.toProduct(e) for e in
+                        database.retrieve_properties("products", {"brand": "Axe"})[:4]]
 
         """ Get all products based on profile products recommendations """
         recs = []
-        for rec in [self.recommendations_relevant_combination(e.product_id) for e in prodlist]:
+        for rec in [self.recommendations_simple(e.product_id) for e in prodlist]:
             if type(rec) == list:
                 for r in rec:
                     recs.append(r)
@@ -351,7 +359,7 @@ class HUWebshop(object):
             product = convert_to_model.toProduct(
                 database.retrieve_properties("products", {"product_id": str(productid)})[0])
         except:
-            #TODO: 404 page?
+            # TODO: 404 page?
             pass
 
         return self.renderpackettemplate('productdetail.html', {'product': product, \
@@ -391,7 +399,9 @@ class HUWebshop(object):
         and stores it in the session if it does. """
         try:
             newprofileid = request.form.get('profile_id')
-            profidexists = self.database.profiles.find_one({'_id': ObjectId(newprofileid)})
+            available_profiles = database.execute_query("select visitor_id from visitor_recs where visitor_id = %s",
+                                                        (newprofileid,))
+            profidexists = available_profiles[0][0] == newprofileid
             if profidexists:
                 session['profile_id'] = newprofileid
                 return '{"success":true}'

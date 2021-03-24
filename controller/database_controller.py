@@ -369,7 +369,7 @@ def create_orders_table(sessions):
     close_db_connection()
     open_db_connection()
 
-def execute_query(query, data, get_results=False):
+def execute_query(query, data, get_results=True):
     open_db_connection()
     cursor.execute(sql.SQL(query), data)
     if get_results:
