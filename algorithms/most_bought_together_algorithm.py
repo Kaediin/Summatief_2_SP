@@ -1,10 +1,6 @@
 import psycopg2
-import psycopg2
 import controller.db_auth
-from models.product_properties import ProductProperties
-from controller.database_predefined_values import tables
 import operator
-
 
 
 def open_db_connection():
@@ -53,8 +49,15 @@ def create_order_based_recs(rec_amount):
     # replacing ' with '' so LIKE in the sql statement doesn't fuck up
     id_list = [id[0].replace("'", "''") for id in data]
 
+    q = f"""select products
+               from orders"""
+
+    cursor.execute(q)
+    data = cursor.fetchall()
 
     for count, product_id in enumerate(id_list):
+
+        data_list = [x[0] for x in data if product_id in x[0]]
 
         if count%1000==0:
             connection.commit()
@@ -64,11 +67,7 @@ def create_order_based_recs(rec_amount):
             from orders
             where '{product_id}' like ANY(products) """
 
-
-        cursor.execute(q)
-        data = cursor.fetchall()
-
-        product_list = [product for order in data for product in list(set(order[0])) if product != product_id]
+        product_list = [product for order in data_list for product in list(set(order)) if product != product_id]
 
         unique_product_list = list(set(product_list))
 
@@ -77,7 +76,6 @@ def create_order_based_recs(rec_amount):
         for p_id in unique_product_list:
 
             results_dict [p_id] = product_list.count(p_id)
-
 
         #sort list on what products were bought together most often with product_id x
         sorted_results = sorted(results_dict.items(), key=operator.itemgetter(1))
