@@ -1,7 +1,9 @@
 import psycopg2
 import controller.db_auth
-from models.product_properties import ProductProperties
+from model.product_properties import ProductProperties
 from controller.database_predefined_values import tables
+from algorithms import most_bought_together_algorithm, simple
+from psycopg2 import sql
 
 connection = None
 cursor = None
@@ -19,6 +21,13 @@ def instantiate(products, sessions, visitors):
     print('Relaties worden toegekend')
     assign_relations()
     print('Relaties zijn toegekend!')
+
+    print('Recommendations worden gemaakt..')
+    open_db_connection()
+    most_bought_together_algorithm.run(cursor, connection)
+    simple.run(cursor, connection)
+    close_db_connection()
+    print('Recommendations zijn gemaakt!')
 
 
 def open_db_connection():
@@ -54,141 +63,146 @@ def fill_db(products, sessions, visitors):
 
     open_db_connection()
 
-    product_id_list = []
+    cursor.execute("select count(*) from products")
+    entries = cursor.fetchone()[0]
 
-    n_products = products.count()
-    n_visitors = visitors.count()
+    if entries != 34004:
 
-    count_products = 0
-    count_visitors = 0
+        product_id_list = []
 
-    for product in products:
-        count_products += 1
-        if count_products % 10000 == 0 or count_products == n_products or count_products == 1:
-            print(f'Products: {count_products}/{n_products}')
+        n_products = products.count()
+        n_visitors = visitors.count()
 
-        try:
-            cursor.execute(
-                "insert into products (product_id, brand, category, color, deeplink, description, fast_mover, flavor, gender, herhaalaankopen, name, predict_out_of_stock_date, recommendable, size) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-                "", (
-                    get_product_property(product, '_id'), get_product_property(product, 'brand'),
-                    get_product_property(product, 'category'),
-                    get_product_property(product, 'color'),
-                    get_product_property(product, 'deeplink'),
-                    get_product_property(product, 'description'),
-                    get_product_property(product, 'fast_mover'),
-                    get_product_property(product, 'flavor'),
-                    get_product_property(product, 'gender'),
-                    get_product_property(product, 'herhaalaankopen'),
-                    get_product_property(product, 'name'),
-                    get_product_property(product, 'predict_out_of_stock_date'),
-                    get_product_property(product, 'recommendable'),
-                    get_product_property(product, 'size')))
+        count_products = 0
+        count_visitors = 0
 
-            product_id_list.append(product['_id'])
+        for product in products:
+            count_products += 1
+            if count_products % 10000 == 0 or count_products == n_products or count_products == 1:
+                print(f'Products: {count_products}/{n_products}')
 
-        except KeyError:
-            continue
-        except psycopg2.errors.UniqueViolation:
-            connection.rollback()
-            continue
-        try:
-            product_price = get_product_property(product, 'price')
-            if product_price:
+            try:
                 cursor.execute(
-                    "insert into product_prices (product_id, discount, mrsp, selling_price) values (%s, %s, %s, %s)",
+                    "insert into products (product_id, brand, category, color, deeplink, description, fast_mover, flavor, gender, herhaalaankopen, name, predict_out_of_stock_date, recommendable, size) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                    "", (
+                        get_product_property(product, '_id'), get_product_property(product, 'brand'),
+                        get_product_property(product, 'category'),
+                        get_product_property(product, 'color'),
+                        get_product_property(product, 'deeplink'),
+                        get_product_property(product, 'description'),
+                        get_product_property(product, 'fast_mover'),
+                        get_product_property(product, 'flavor'),
+                        get_product_property(product, 'gender'),
+                        get_product_property(product, 'herhaalaankopen'),
+                        get_product_property(product, 'name'),
+                        get_product_property(product, 'predict_out_of_stock_date'),
+                        get_product_property(product, 'recommendable'),
+                        get_product_property(product, 'size')))
+
+                product_id_list.append(product['_id'])
+
+            except KeyError:
+                continue
+            except psycopg2.errors.UniqueViolation:
+                connection.rollback()
+                continue
+            try:
+                product_price = get_product_property(product, 'price')
+                if product_price:
+                    cursor.execute(
+                        "insert into product_prices (product_id, discount, mrsp, selling_price) values (%s, %s, %s, %s)",
+                        (product['_id'],
+                         get_product_property(product_price, 'discount'),
+                         get_product_property(product_price, 'mrsp'),
+                         get_product_property(product_price, 'selling_price'),
+                         ))
+                else:
+                    cursor.execute(
+                        "insert into product_prices (product_id, discount, mrsp, selling_price) values (%s, %s, %s, %s)",
+                        (product['_id'],
+                         None,
+                         None,
+                         None))
+            except (Exception, psycopg2.Error):
+                continue
+
+            insert_product_properties(product, cursor)
+            try:
+                product_sm = product['sm']
+                cursor.execute(
+                    "INSERT INTO product_sm (product_id, last_updated, type, is_active) VALUES (%s, %s, %s, %s)",
                     (product['_id'],
-                     get_product_property(product_price, 'discount'),
-                     get_product_property(product_price, 'mrsp'),
-                     get_product_property(product_price, 'selling_price'),
-                     ))
+                     get_product_property(product_sm, 'last_updated'),
+                     get_product_property(product_sm, 'type'),
+                     get_product_property(product_sm, 'is_active'),))
+            except (Exception, psycopg2.Error):
+                continue
+
+            try:
+                cursor.execute(
+                    "INSERT INTO product_categories (product_id, category, sub_category, sub_sub_category, sub_sub_sub_category) VALUES (%s, %s, %s, %s, %s)",
+                    (product['_id'],
+                     get_product_property(product, 'category'),
+                     get_product_property(product, 'sub_category'),
+                     get_product_property(product, 'sub_sub_category'),
+                     get_product_property(product, 'sub_sub_sub_category'))
+                )
+            except (Exception, psycopg2.Error):
+                continue
+
+        close_db_connection()
+        open_db_connection()
+
+        create_orders_table(sessions)
+
+
+        for visitor in visitors:
+
+            count_visitors += 1
+            if count_visitors % 10000 == 0 or count_visitors == n_visitors or count_visitors == 1:
+                print(f'Visitors: {count_visitors}/{n_visitors}')
+                close_db_connection()
+                open_db_connection()
+
+            recs = get_product_property(visitor, 'recommendations')
+            previously_recommended = get_product_property(visitor, 'previously_recommended')
+
+            # we replacen lege lijsten met None zodat we zeker weten dat alleen NULL/None geen resultaten oplevert
+            if previously_recommended is not None:
+                if len(previously_recommended) == 0:
+                    previously_recommended = None
+
+            if recs:
+                viewed_before = get_product_property(recs, 'viewed_before')
+                similars = get_product_property(recs, 'similars')
+
+                if len(viewed_before) == 0:
+                    viewed_before = None
+                if len(similars) == 0:
+                    similars = None
             else:
-                cursor.execute(
-                    "insert into product_prices (product_id, discount, mrsp, selling_price) values (%s, %s, %s, %s)",
-                    (product['_id'],
-                     None,
-                     None,
-                     None))
-        except (Exception, psycopg2.Error):
-            continue
-
-        insert_product_properties(product, cursor)
-        try:
-            product_sm = product['sm']
-            cursor.execute(
-                "INSERT INTO product_sm (product_id, last_updated, type, is_active) VALUES (%s, %s, %s, %s)",
-                (product['_id'],
-                 get_product_property(product_sm, 'last_updated'),
-                 get_product_property(product_sm, 'type'),
-                 get_product_property(product_sm, 'is_active'),))
-        except (Exception, psycopg2.Error):
-            continue
-
-        try:
-            cursor.execute(
-                "INSERT INTO product_categories (product_id, category, sub_category, sub_sub_category, sub_sub_sub_category) VALUES (%s, %s, %s, %s, %s)",
-                (product['_id'],
-                 get_product_property(product, 'category'),
-                 get_product_property(product, 'sub_category'),
-                 get_product_property(product, 'sub_sub_category'),
-                 get_product_property(product, 'sub_sub_sub_category'))
-            )
-        except (Exception, psycopg2.Error):
-            continue
-
-    close_db_connection()
-    open_db_connection()
-
-    create_orders_table(sessions)
-
-
-    for visitor in visitors:
-
-        count_visitors += 1
-        if count_visitors % 10000 == 0 or count_visitors == n_visitors or count_visitors == 1:
-            print(f'Visitors: {count_visitors}/{n_visitors}')
-            close_db_connection()
-            open_db_connection()
-
-        recs = get_product_property(visitor, 'recommendations')
-        previously_recommended = get_product_property(visitor, 'previously_recommended')
-
-        # we replacen lege lijsten met None zodat we zeker weten dat alleen NULL/None geen resultaten oplevert
-        if previously_recommended is not None:
-            if len(previously_recommended) == 0:
-                previously_recommended = None
-
-        if recs:
-            viewed_before = get_product_property(recs, 'viewed_before')
-            similars = get_product_property(recs, 'similars')
-
-            if len(viewed_before) == 0:
                 viewed_before = None
-            if len(similars) == 0:
                 similars = None
-        else:
-            viewed_before = None
-            similars = None
 
-        try:
-            cursor.execute(
-                "INSERT INTO visitor_recs (visitor_id, previously_recommended, viewed_before, similars) VALUES (%s, %s, %s, %s)",
-                (str(get_product_property(visitor, '_id')), previously_recommended,
-                 viewed_before, similars
+            try:
+                cursor.execute(
+                    "INSERT INTO visitor_recs (visitor_id, previously_recommended, viewed_before, similars) VALUES (%s, %s, %s, %s)",
+                    (str(get_product_property(visitor, '_id')), previously_recommended,
+                     viewed_before, similars
 
-                 ))
+                     ))
 
-        except Exception as e:
-            print(e)
-            connection.rollback()
+            except Exception as e:
+                print(e)
+                connection.rollback()
 
-        try:
-            cursor.execute(
-                "INSERT INTO visitors (visitor_id, buids) VALUES (%s, %s)",
-                (str(get_product_property(visitor, '_id')), get_product_property(visitor, 'buids')))
+            try:
+                cursor.execute(
+                    "INSERT INTO visitors (visitor_id, buids) VALUES (%s, %s)",
+                    (str(get_product_property(visitor, '_id')), get_product_property(visitor, 'buids')))
 
-        except Exception as e:
-            connection.rollback()
+            except Exception as e:
+                connection.rollback()
 
     close_db_connection()
 
@@ -298,11 +312,11 @@ def retrieve_properties(table, properties, returncols=("*")):
     try:
         cursor.execute(
             f"SELECT {', '.join(returncols)} FROM {table} WHERE {' AND '.join([e + ' = ' + quoted(properties[e]) for e in properties])}")
-        return cursor.fetchall()
+        results = cursor.fetchall()
+        close_db_connection()
+        return results
     except Exception:
-        pass
-    close_db_connection()
-
+        close_db_connection()
 
 def get_product_property(product_data, key):
     """Return the value of a property, returning none if no value is found"""
@@ -354,3 +368,12 @@ def create_orders_table(sessions):
 
     close_db_connection()
     open_db_connection()
+
+def execute_query(query, data, get_results=False):
+    open_db_connection()
+    cursor.execute(sql.SQL(query), data)
+    if get_results:
+        results = cursor.fetchall()
+        close_db_connection()
+        return results
+    close_db_connection()

@@ -1,53 +1,42 @@
 import psycopg2
 import random
-# import controller.db_auth
 
-
-def getPostgreSQLConnection(psycopg2):
-    conn = psycopg2.connect(user="postgres",
-                            password="johnwilliams",
-                            host="127.0.0.1",
-                            port="5432",
-                            database="spsummatief")
-    return conn
-
-
-connection = getPostgreSQLConnection(psycopg2)
-cursor = connection.cursor()
-
-
-def run():
+def run(cursor, connection):
     """
         Drop, then create, the table 'simplerecs', and then fill that table with product ID's and recommended items
     """
-    try:
-        cursor.execute("drop table if exists simplerecs")
-        cursor.execute("CREATE TABLE simplerecs (product_id varchar PRIMARY KEY, recommendations varchar[] null)")
-        print("Table created")
-    except psycopg2.errors.DuplicateTable:
-        connection.rollback()
-        print("Table already exists")
+    cursor.execute("select count(*) from products")
+    entries = cursor.fetchone()[0]
 
-    cursor.execute("select product_id from product_categories where category is not null")
-    ids = [e[0] for e in cursor.fetchall()]
+    if entries != 34004:
+        try:
+            cursor.execute("drop table if exists simplerecs")
+            cursor.execute("CREATE TABLE simplerecs (product_id varchar PRIMARY KEY, recommendations varchar[] null)")
+            print("Table created")
+        except psycopg2.errors.DuplicateTable:
+            connection.rollback()
+            print("Table already exists")
 
-    c = 0
-    for i in ids:
-        i = i.replace("'", "''")
-        recs = recommend(i)
-        cursor.execute("insert into simplerecs (product_id, recommendations) values (%s, %s)", (i, recs))
-        if c % 1000 == 0:
-            print(c)
-        c += 1
+        cursor.execute("select product_id from product_categories where category is not null")
+        ids = [e[0] for e in cursor.fetchall()]
+
+        c = 0
+        for i in ids:
+            i = i.replace("'", "''")
+            recs = recommend(i, cursor)
+            cursor.execute("insert into simplerecs (product_id, recommendations) values (%s, %s)", (i, recs))
+            if c % 1000 == 0 or c == 1 or c == len(ids):
+                print(f'Recommendations made (simple): {c}/{len(ids)}')
+            c += 1
 
 
-def recommend(i):
+def recommend(product_id, cursor, limit=4):
     """
         Generate 4 items to recommend based on the given product ID
     """
     cursor.execute(f"""
                         select p.category, p.sub_category, p.sub_sub_category from product_categories p
-                            where p.product_id = '{i}'
+                            where p.product_id = '{product_id}'
                     """)
     cat, subcat, subsubcat = [e.replace("'", "''") if e is not None else e for e in cursor.fetchall()[0]]
 
@@ -64,7 +53,7 @@ def recommend(i):
                                 where pc.category = '{cat}'
                                 and pc.sub_category != '{subcat}'
                             order by filter
-                            limit 4) as t
+                            limit {limit}) as t
                     """)
 
     res = [str(r[0]) for r in cursor.fetchall()]
@@ -74,21 +63,3 @@ def recommend(i):
 
         [res.append(e) for e in random.sample(ids, 4) if e not in res and len(res) < 4]
     return res
-
-
-def getrecs(i):
-    """
-        Get the recommended items from the database given a product ID
-    """
-    i = i.replace("'", "''")
-    cursor.execute(f"select recommendations from simplerecs where product_id = '{i}'")
-    return cursor.fetchall()[0][0]
-
-
-# run()
-print(recommend('31861'))
-
-
-connection.commit()
-cursor.close()
-connection.close()
