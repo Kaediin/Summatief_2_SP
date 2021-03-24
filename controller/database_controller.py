@@ -57,11 +57,9 @@ def fill_db(products, sessions, visitors):
     product_id_list = []
 
     n_products = products.count()
-    n_sessions = sessions.count()
     n_visitors = visitors.count()
 
     count_products = 0
-    count_sessions = 0
     count_visitors = 0
 
     for product in products:
@@ -193,7 +191,6 @@ def fill_db(products, sessions, visitors):
             connection.rollback()
 
     close_db_connection()
-    open_db_connection()
 
 
 def assign_relations():
@@ -316,10 +313,15 @@ def get_product_property(product_data, key):
 
 
 def create_orders_table(sessions):
-
-    open_db_connection()
+    n_sessions = sessions.count()
+    count_sessions = 0
 
     for session in sessions:
+        count_sessions += 1
+        if count_sessions % 10000 == 0 or count_sessions == n_sessions or count_sessions == 1:
+            print(f'Sessions: {count_sessions}/{n_sessions}')
+            close_db_connection()
+            open_db_connection()
 
         session_id = get_product_property(session, '_id')
         session_start = get_product_property(session, 'session_start')
