@@ -30,7 +30,7 @@ def close_db_connection():
         # print("PostgreSQL connection is closed")
 
 
-def create_order_based_recs():
+def create_order_based_recs(rec_amount):
     open_db_connection()
 
     # create table
@@ -38,7 +38,7 @@ def create_order_based_recs():
     # avg_x_shared_orders = 3 -> weak correlation, avg_x_shared_orders = 200 -> very strong correlation.
     try:
         cursor.execute(
-        f"create table order_based_recs (product_id varchar primary key, recs varchar[], avg_x_shared_orders int)"
+        f"create table order_based_recs (product_id varchar primary key, recommendations varchar[], avg_x_shared_orders int)"
         )
     except:
         connection.rollback()
@@ -49,7 +49,6 @@ def create_order_based_recs():
         "select product_id from products"
     )
     data = cursor.fetchall()
-    id_list = []
 
     # replacing ' with '' so LIKE in the sql statement doesn't fuck up
     id_list = [id[0].replace("'", "''") for id in data]
@@ -84,17 +83,13 @@ def create_order_based_recs():
         sorted_results = sorted(results_dict.items(), key=operator.itemgetter(1))
         sorted_results.reverse()
 
-        rec_amount = 4
 
         recs = [rec[0] for rec in sorted_results][:rec_amount]
-
 
         try:
             count_list = [sorted_results[x][1] for x in range(len(recs))]
         except:
             pass
-
-
 
         if len(recs)!=0:
             avg = round(sum(count_list)/len(recs),2)
@@ -103,7 +98,7 @@ def create_order_based_recs():
             avg = 0
 
         cursor.execute(
-            f"insert into order_based_recs (product_id,recs,avg_x_shared_orders) values(%s,%s,%s)",(product_id,recs,avg)
+            f"insert into order_based_recs (product_id,recommendations,avg_x_shared_orders) values(%s,%s,%s)",(product_id,recs,avg)
         )
 
 
@@ -111,4 +106,4 @@ def create_order_based_recs():
 
 
 
-create_order_based_recs()
+create_order_based_recs(4)
