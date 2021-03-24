@@ -3,6 +3,7 @@ import psycopg2
 import controller.db_auth
 from models.product_properties import ProductProperties
 from controller.database_predefined_values import tables
+import operator
 
 
 
@@ -28,13 +29,21 @@ def close_db_connection():
         connection.close()
         # print("PostgreSQL connection is closed")
 
-def create_user_orders_rec(name):
+
+def create_order_based_recs():
     open_db_connection()
 
     # create table
-    cursor.execute(
-        f"create table {name}(product_id varchar primary key, rec_1 varchar, rec_2 varchar, rec_3 varchar, rec_4 varchar)"
-    )
+    # we track the average of how many times the most bought together items were in the same order as item x, we do this so we have an indication of the accuracy of the recommendation:
+    # avg_x_shared_orders = 3 -> weak correlation, avg_x_shared_orders = 200 -> very strong correlation.
+    try:
+        cursor.execute(
+        f"create table order_based_recs (product_id varchar primary key, recs varchar[], avg_x_shared_orders int)"
+        )
+    except:
+        connection.rollback()
+
+    connection.commit()
 
     cursor.execute(
         "select product_id from products"
@@ -45,77 +54,61 @@ def create_user_orders_rec(name):
     # replacing ' with '' so LIKE in the sql statement doesn't fuck up
     id_list = [id[0].replace("'", "''") for id in data]
 
-    rec_list = []
 
     for count, product_id in enumerate(id_list):
-        # using a subquery to fetch the 4 products most often bought together with product "product_id" that don't share the same sub_sub_category
 
-        if name == 'order_recs':
+        if count%1000==0:
+            connection.commit()
+            print(f"{count}/{len(id_list)}")
 
-            q = f"""select product_id ,count(product_id) as product_id_count 
-                    from product_in_order pio2  
-                    where session_id in (select session_id  from product_in_order pio  where product_id like '{product_id}')
-                    and product_id not like '{product_id}' 
-                    group by product_id  
-                    order by product_id_count desc limit 4"""
-
-        elif name == 'order_recs_dif_cat':
-            q = f"""select pio2.product_id ,count(pio2.product_id) as product_id_count
-                    from product_in_order pio2 inner join product_categories pc on pc.product_id = pio2.product_id
-                    where session_id in (select session_id  from product_in_order pio  where product_id like '{product_id}')
-                    and sub_sub_category is not null and pio2.product_id not like '{product_id}'
-                    and pc.sub_sub_category not in (select sub_sub_category from product_categories pc2 where product_id like '{product_id}')
-                    group by pio2.product_id , pc.sub_sub_category
-                    order by product_id_count
-                    desc limit 4"""
-
-        if name == 'product_recs':
-
-            q = f"""select pio2.product_id ,count(pio2.product_id) as product_id_count
-                    from product_in_order pio2 inner join product_categories pc on pc.product_id = pio2.product_id
-                    where session_id in (select session_id  from product_in_order pio  where product_id like '{product_id}')
-                    and sub_sub_category is not null and pio2.product_id not like '{product_id}'
-                    and pc.sub_sub_category in (select sub_sub_category from product_categories pc2 where product_id like '{product_id}')
-                    group by pio2.product_id , pc.sub_sub_category
-                    order by product_id_count
-                    desc limit 4"""
-
-        elif name == 'cart_recs':
-
-           q = f"""select pio2.product_id ,count(pio2.product_id) as product_id_count
-                    from product_in_order pio2 inner join product_categories pc on pc.product_id = pio2.product_id
-                    where session_id in (select session_id  from product_in_order pio  where product_id like '{product_id}')
-                    and sub_sub_category is not null and pio2.product_id not like '{product_id}'
-                    and pc.sub_sub_category not in (select sub_sub_category from product_categories pc2 where product_id like '{product_id}')
-                    group by pio2.product_id , pc.sub_sub_category
-                    order by product_id_count
-                    desc limit 4"""
+        q = f"""select products
+            from orders
+            where '{product_id}' like ANY(products) """
 
 
         cursor.execute(q)
-
         data = cursor.fetchall()
-        id_recs = [x[0] for x in data]
 
-        for i in range(4 - (len(id_recs))):
-            id_recs.append('NULL')
+        product_list = [product for order in data for product in list(set(order[0])) if product != product_id]
 
-        for i in range(len(id_recs)):
-            if (id_recs[i] != 'NULL'):
-                id_recs[i] = f"'{id_recs[i]}'"
+        unique_product_list = list(set(product_list))
 
-        rec_list.append(id_recs)
+        results_dict = {}
+
+        for p_id in unique_product_list:
+
+            results_dict [p_id] = product_list.count(p_id)
+
+
+        #sort list on what products were bought together most often with product_id x
+        sorted_results = sorted(results_dict.items(), key=operator.itemgetter(1))
+        sorted_results.reverse()
+
+        rec_amount = 4
+
+        recs = [rec[0] for rec in sorted_results][:rec_amount]
+
+
+        try:
+            count_list = [sorted_results[x][1] for x in range(len(recs))]
+        except:
+            pass
+
+
+
+        if len(recs)!=0:
+            avg = round(sum(count_list)/len(recs),2)
+        else:
+            recs = None
+            avg = 0
+
         cursor.execute(
-            f"insert into {name}(product_id,rec_1,rec_2,rec_3,rec_4) values('{product_id}',{id_recs[0]},{id_recs[1]},{id_recs[2]},{id_recs[3]})"
+            f"insert into order_based_recs (product_id,recs,avg_x_shared_orders) values(%s,%s,%s)",(product_id,recs,avg)
         )
 
-        # commit every 2000 rows
-        if count % 2000 == 0:
-            close_db_connection()
-            open_db_connection()
 
     close_db_connection()
 
 
 
-create_user_orders_rec('cart_recs')
+create_order_based_recs()
