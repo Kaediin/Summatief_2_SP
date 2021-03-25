@@ -319,7 +319,7 @@ class HUWebshop(object):
 
         """ Get all products (this need to be based on profile) """
         try:
-            profile_id = session['profile_id'] if session['profile_id'] is not None else '5a393d68ed295900010384ca'
+            profile_id = session['profile_id'] if session['profile_id'] is not None else '59dce306a56ac6edb4c12838'
             prodlist = self.recommendations_profile(profile_id)
         except Exception as e:
             print(e.args)
@@ -383,6 +383,32 @@ class HUWebshop(object):
         r_prods = self.recommendations_relevant_combination(session['shopping_cart'][0][0])
         # print(session['shopping_cart'][0][0][0])
 
+        ids_in_cart = [x[0] for x in session['shopping_cart']]
+
+        if len(ids_in_cart) == 1:
+            ids_in_cart.append('')
+        recs_data = database.execute_query(f"select * from order_based_recs where product_id in {tuple(ids_in_cart)}",
+                                           "")
+        recs_data = list(reversed(sorted(recs_data, key=lambda x: x[2])))[:4]
+        recs_data_simple = database.execute_query(f"select * from simplerecs where product_id in {tuple(ids_in_cart)}",
+                                                  "")
+
+        sample_size_limit = 10
+        if recs_data[0][2] < sample_size_limit:
+            print('simple')
+            recs = list(set([z for x in recs_data_simple for z in random.sample(x[1], k=len(x[1]))]))[:4]
+
+        else:
+            print('bought_together')
+
+
+            recs = list(set([product for rec in recs_data if rec[2] >= sample_size_limit for product in rec[1] if
+                             product not in ids_in_cart]))
+            recs = random.sample(recs, k=len(recs))[:4]
+
+        r_prods = [convert_to_model.toProduct(e) for e in
+                   (database.execute_query("select * from products where product_id in %s", (tuple(recs),)))]
+
         return self.renderpackettemplate('shoppingcart.html', {'itemsincart': i, \
                                                                'r_products': r_prods, \
                                                                'r_type': list(self.recommendationtypes.keys())[2], \
@@ -392,6 +418,7 @@ class HUWebshop(object):
         """ This subpage shows all top-level categories in its main menu. """
         return self.renderpackettemplate('categoryoverview.html')
 
+    """ ..:: Dynamic AJAX Endpoints ::.. """
     """ ..:: Dynamic AJAX Endpoints ::.. """
 
     def changeprofileid(self):
