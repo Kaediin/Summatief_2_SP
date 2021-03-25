@@ -11,7 +11,7 @@ def run(cursor, connection):
     if entries != 34004:
         try:
             cursor.execute("drop table if exists simplerecs")
-            cursor.execute("CREATE TABLE simplerecs (product_id varchar PRIMARY KEY, recommendations varchar[] null)")
+            cursor.execute("create table simplerecs (product_id varchar primary key, recommendations varchar[] null)")
             print("Table created")
         except psycopg2.errors.DuplicateTable:
             connection.rollback()
