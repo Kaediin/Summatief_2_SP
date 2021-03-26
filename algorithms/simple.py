@@ -44,14 +44,17 @@ def recommend(product_id, cursor, limit=4):
                         select t.product_id from (
                             select *, 1 as filter from product_categories pc
                                 where pc.sub_sub_category = '{subsubcat}'
+                                and pc.product_id != '{product_id}'
                             union 
                             select *, 2 as filter from product_categories pc
                                 where pc.sub_category = '{subcat}'
                                 and pc.sub_sub_category != '{subsubcat}'
+                                and pc.product_id != '{product_id}'
                             union 
                             select *, 3 as filter from product_categories pc
                                 where pc.category = '{cat}'
                                 and pc.sub_category != '{subcat}'
+                                and pc.product_id != '{product_id}'
                             order by filter
                             limit {limit}) as t
                     """)
