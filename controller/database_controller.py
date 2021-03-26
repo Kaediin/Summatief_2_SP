@@ -2,7 +2,7 @@ import psycopg2
 import controller.db_auth
 from model.product_properties import ProductProperties
 from controller.database_predefined_values import tables
-from algorithms import most_bought_together_algorithm, simple
+from algorithms import most_bought_together_algorithm, simple, profiles
 from psycopg2 import sql
 
 connection = None
@@ -47,9 +47,18 @@ def close_db_connection():
 
     # closing database connection.
     if connection:
-        connection.commit()
-        cursor.close()
-        connection.close()
+        try:
+            connection.commit()
+        except Exception:
+            pass
+        try:
+            cursor.close()
+        except Exception:
+            pass
+        try:
+            connection.close()
+        except Exception:
+            pass
         # print("PostgreSQL connection is closed")
 
 
@@ -154,7 +163,6 @@ def fill_db(products, sessions, visitors):
         open_db_connection()
 
         create_orders_table(sessions)
-
 
         for visitor in visitors:
 
@@ -318,6 +326,7 @@ def retrieve_properties(table, properties, returncols=("*")):
     except Exception:
         close_db_connection()
 
+
 def get_product_property(product_data, key):
     """Return the value of a property, returning none if no value is found"""
     try:
@@ -342,7 +351,6 @@ def create_orders_table(sessions):
         session_end = get_product_property(session, 'session_end')
         buid_array = get_product_property(session, 'buid')
 
-
         if buid_array is not None:
             buid = buid_array[0]
         else:
@@ -356,7 +364,6 @@ def create_orders_table(sessions):
         if products_raw is not None:
             products = [product['id'] for product in products_raw]
 
-
         try:
             cursor.execute(
                 "INSERT INTO orders (session_id, session_start, session_end, buid, products) VALUES (%s, %s, %s, %s,%s)",
@@ -368,6 +375,7 @@ def create_orders_table(sessions):
 
     close_db_connection()
     open_db_connection()
+
 
 def execute_query(query, data, get_results=True):
     open_db_connection()
