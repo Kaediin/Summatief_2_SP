@@ -198,11 +198,11 @@ class HUWebshop(object):
         # print(p)
         r = {}
         r['name'] = p.name
-        r['price'] = p.price
-        r['price'] = str(r['price'])[0:-2] + ",-" if r['price'] % 100 == 0 else str(r['price'])[0:-2] + "," + str(
-            r['price'])[-2:]
-        if r['price'][0:1] == ",":
-            r['price'] = "0" + r['price']
+        r['price'] = p.price/100
+        # r['price'] = str(r['price'])[0:-2] + ",-" if r['price'] % 100 == 0 else str(r['price'])[0:-2] + "," + str(
+        #     r['price'])[-2:]
+        # if r['price'][0:1] == ",":
+        #     r['price'] = "0" + r['price']
         if p.discount is not None:
             r['discount'] = p.discount
         r['smallimage'] = ""  # TODO: replace this with actual images!
@@ -319,7 +319,7 @@ class HUWebshop(object):
 
         """ Get all products (this need to be based on profile) """
         try:
-            profile_id = session['profile_id'] if session['profile_id'] is not None else '59dce306a56ac6edb4c12838'
+            profile_id = session['profile_id'] if session['profile_id'] is not None else '5a393ef6a825610001bb6c51'
             prodlist = self.recommendations_profile(profile_id)
         except Exception as e:
             print(e.args)
@@ -377,6 +377,7 @@ class HUWebshop(object):
                 database.retrieve_properties("products", {"product_id": f"{tup[0]}"})[0])
             product = self.prepproduct(prod_obj)
             product["itemcount"] = tup[1]
+            # product["price"] = float(product["price"].rstrip('0').replace('.', '').replace(',', ''))
             i.append(product)
 
         # print(f"Shoppingcart items: {i}")
