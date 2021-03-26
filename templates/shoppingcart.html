@@ -7,10 +7,10 @@
                     <a href="/productdetail/{{ product.id }}">
                         <div class="productname">{{ product.name }}</div>
                         {% if product.price is not none %}
-                            <div class="productprice">{{ product.price }}</div>
+                            <div class="productprice">€{{ product.price }}</div>
                         {% endif %}
                         {% if product.discount is not none %}
-                            <div class="productdiscount">{{ product.discount }}</div>
+                            <div class="productdiscount">€{{ product.discount }}</div>
                         {% endif %}
                         <div class="productitemcount">{{ product.itemcount }} x</div>
                     </a>

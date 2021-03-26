@@ -319,7 +319,7 @@ class HUWebshop(object):
 
         """ Get all products (this need to be based on profile) """
         try:
-            profile_id = session['profile_id'] if session['profile_id'] is not None else '5a393ef6a825610001bb6c51'
+            profile_id = session['profile_id'] if session['profile_id'] is not None else '5a393eceed295900010386a8' #5a393eceed295900010386a8
             prodlist = self.recommendations_profile(profile_id)
         except Exception as e:
             print(e.args)

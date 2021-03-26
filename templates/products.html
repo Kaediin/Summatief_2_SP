@@ -7,10 +7,10 @@
                 <a href="/productdetail/{{ product.product_id }}">
                     <div class="productname">{{ product.name }}</div>
                     {% if product.price is not none %}
-                        <div class="productprice">{{ product.price/100 }}</div>
+                        <div class="productprice">€{{ product.price/100 }}</div>
                     {% endif %}
                     {% if product.discount is not none %}
-                        <div class="productdiscount hublue">{{ product.discount/100 }}</div>
+                        <div class="productdiscount hublue">€{{ product.discount/100 }}</div>
                     {% endif %}
                 </a>
                 <a href="#" function="add-to-shopping-cart" class="productpage-addtocart button hured"
