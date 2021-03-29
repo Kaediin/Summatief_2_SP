@@ -6,10 +6,14 @@ def run(cursor, connection):
     """
         Drop, then create, the table 'simplerecs', and then fill that table with product ID's and recommended items
     """
-    cursor.execute("select count(*) from products")
-    entries = cursor.fetchone()[0]
+    try:
+        cursor.execute("select count(*) from simplerecs")
+        hasEntries = True if cursor.fetchone()[0] > 0 else False
+    except:
+        connection.rollback()
+        hasEntries = False
 
-    if entries != 34004:
+    if not hasEntries:
         try:
             cursor.execute("drop table if exists simplerecs")
             cursor.execute("create table simplerecs (product_id varchar primary key, recommendations varchar[] null)")

@@ -1,17 +1,14 @@
 import controller.database_controller as database
-import itertools
+import itertools, random
 
 
-def get_recs(visitor_id, limit=4):
-    products = known_products(visitor_id, limit)
-    if len(products) < limit:
-        print(f"Profile id: {visitor_id} is {limit-len(products)} short")
-        products.extend(based_on_orders(visitor_id, products, limit=limit-len(products)))
-
+def get_recs(visitor_id):
+    products = known_products(visitor_id)
+    # products.extend(based_on_orders(visitor_id, products))
     return products
 
 
-def known_products(visitor_id, limit=4):
+def known_products(visitor_id):
     results = list(database.execute_query(
         "select previously_recommended, viewed_before, similars from visitor_recs where visitor_id = %s",
         (visitor_id,))[0])
@@ -43,18 +40,18 @@ def known_products(visitor_id, limit=4):
                                 reversed(sorted(category_counter[layer].items(), key=lambda item: item[1]))}
             most_popular_category = list(category_counter.keys())[0]
             popular_category_product_ids = database.execute_query(
-                "select product_id from product_categories where sub_sub_category = %s limit %s",
-                (most_popular_category, limit))
-
-            for row in popular_category_product_ids:
-                products.append(database.execute_query("select * from products where product_id = %s", (row[0],)))
-                if len(products) == 4:
-                    return products
-        except Exception:
-            return products
+                "select product_id from product_categories where sub_sub_category = %s",
+                (most_popular_category, ))
+            popular_category_product_ids = list(itertools.chain.from_iterable(popular_category_product_ids))
+            products_results = database.execute_query("select * from products where product_id in %s", (tuple(popular_category_product_ids), ))
+            random.shuffle(products_results)
+            return products_results
+        except Exception as e:
+            print(e.args)
+            break
     return products
 
-def based_on_orders(vistor_id, products, limit=4):
+def based_on_orders(vistor_id, products):
     buids = database.execute_query("select buids from visitors where visitor_id = %s", (vistor_id,))[0][0]
     product_ids = set()
     for buid in buids:

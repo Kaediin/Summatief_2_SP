@@ -198,7 +198,7 @@ class HUWebshop(object):
         # print(p)
         r = {}
         r['name'] = p.name
-        r['price'] = p.price/100
+        r['price'] = p.price / 100
         # r['price'] = str(r['price'])[0:-2] + ",-" if r['price'] % 100 == 0 else str(r['price'])[0:-2] + "," + str(
         #     r['price'])[-2:]
         # if r['price'][0:1] == ",":
@@ -293,7 +293,7 @@ class HUWebshop(object):
         #     resultlist = list(map(self.prepproduct, list(querycursor)))
         #     return resultlist
         prods = profiles.get_recs(profile_id)
-        prods_objects = [convert_to_model.toProduct(e[0]) for e in prods]
+        prods_objects = [convert_to_model.toProduct(e) for e in prods[:limit]]
         # result = database.retrieve_properties("products", {"brand": "Andrelon"})[:limit]
         # prods = [convert_to_model.toProduct(e) for e in result]
         return prods_objects
@@ -304,52 +304,63 @@ class HUWebshop(object):
         """ This function renders the product page template with the products it
         can retrieve from the database, based on the URL path provided (which
         corresponds to product categories). """
+        limit = 8
         catlist = [cat1, cat2, cat3, cat4]
-        queryfilter = {}
-        nononescats = []
-        for k, v in enumerate(catlist):
-            if v is not None:
-                queryfilter[self.catlevels[k]] = self.catdecode[v]
-                nononescats.append(v)
-        querycursor = self.database.products.find(queryfilter, self.productfields)
-        prodcount = self.database.products.count_documents(queryfilter)
+        nononescats = [e for e in catlist if e is not None]
+        # queryfilter = {}
+        # for k, v in enumerate(catlist):
+        #     if v is not None:
+        # queryfilter[self.catlevels[k]] = self.catdecode[v]
+        # nononescats.append(v)
+        # querycursor = self.database.products.find(queryfilter, self.productfields)
+        # prodcount = self.database.products.count_documents(queryfilter)
         skipindex = session['items_per_page'] * (page - 1)
-        querycursor.skip(skipindex)
-        querycursor.limit(session['items_per_page'])
+        # querycursor.skip(skipindex)
+        # querycursor.limit(session['items_per_page'])
 
         """ Get all products (this need to be based on profile) """
         try:
-            profile_id = session['profile_id'] if session['profile_id'] is not None else '5a393eceed295900010386a8' #5a393eceed295900010386a8
-            prodlist = self.recommendations_profile(profile_id)
+            profile_id = session['profile_id'] if session[
+                                                      'profile_id'] is not None else None
+            prodlist = self.recommendations_profile(profile_id, limit=limit)
+            if len(prodlist) < limit:
+                raise Exception
         except Exception as e:
             print(e.args)
             print('Running default')
             prodlist = [convert_to_model.toProduct(e) for e in
-                        database.retrieve_properties("products", {"brand": "Axe"})[:4]]
+                        database.execute_query(
+                            "select * from products where name is not null order by random() limit 8", ()) if
+                        e[10] is not None]
 
         """ Get all products based on profile products recommendations """
         recs = []
-        for rec in [self.recommendations_simple(e.product_id) for e in prodlist]:
-            if type(rec) == list:
-                for r in rec:
-                    recs.append(r)
-
+        i = 0
+        while len(recs) < limit:
+            for rec in [self.recommendations_simple(prodlist[i].product_id)]:
+                if type(rec) == list:
+                    for recommendation in rec:
+                        recs.append(recommendation)
+            i += 1
         if len(nononescats) > 1:
             pagepath = "/producten/" + ("/".join(nononescats)) + "/"
         else:
             pagepath = "/producten/"
-        return self.renderpackettemplate('products.html', {'products': prodlist, \
-                                                           'productcount': prodcount, \
-                                                           'pstart': skipindex + 1, \
+
+        return self.renderpackettemplate('products.html', {'products': prodlist,
+                                                           'productcount': len(prodlist),
+                                                           'pstart': skipindex + 1,
                                                            'pend': skipindex + session['items_per_page'] if session[
-                                                                                                                'items_per_page'] > 0 else prodcount, \
+                                                                                                                'items_per_page'] > 0 else len(
+                                                               prodlist),
                                                            'prevpage': pagepath + str(page - 1) if (
-                                                                   page > 1) else False, \
+                                                                   page > 1) else False,
                                                            'nextpage': pagepath + str(page + 1) if (session[
-                                                                                                        'items_per_page'] * page < prodcount) else False, \
-                                                           'r_products': recs[:4], \
-                                                           'r_type': list(self.recommendationtypes.keys())[0], \
-                                                           'r_string': list(self.recommendationtypes.values())[0] \
+                                                                                                        'items_per_page'] * page < len(
+                                                               prodlist)) else False,
+                                                           'r_products': recs[:4],
+                                                           'r_type': list(self.recommendationtypes.keys())[0],
+                                                           'r_string': list(self.recommendationtypes.values())[0]
                                                            })
 
     def productdetail(self, productid):
@@ -372,6 +383,7 @@ class HUWebshop(object):
     def shoppingcart(self):
         """ This function renders the shopping cart for the user."""
         i = []
+        limit = 4
         for tup in session['shopping_cart']:
             prod_obj = convert_to_model.toProduct(
                 database.retrieve_properties("products", {"product_id": f"{tup[0]}"})[0])
@@ -380,35 +392,38 @@ class HUWebshop(object):
             # product["price"] = float(product["price"].rstrip('0').replace('.', '').replace(',', ''))
             i.append(product)
 
-        # print(f"Shoppingcart items: {i}")
-        r_prods = self.recommendations_relevant_combination(session['shopping_cart'][0][0])
-        # print(session['shopping_cart'][0][0][0])
-
         ids_in_cart = [x[0] for x in session['shopping_cart']]
 
         if len(ids_in_cart) == 1:
             ids_in_cart.append('')
-        recs_data = database.execute_query(f"select * from order_based_recs where product_id in {tuple(ids_in_cart)}",
-                                           "")
-        recs_data = list(reversed(sorted(recs_data, key=lambda x: x[2])))[:4]
-        recs_data_simple = database.execute_query(f"select * from simplerecs where product_id in {tuple(ids_in_cart)}",
-                                                  "")
+        if len(ids_in_cart) > 0:
+            recs_data = database.execute_query(f"select * from order_based_recs where product_id in {tuple(ids_in_cart)}",
+                                               "")
+            recs_data = list(reversed(sorted(recs_data, key=lambda x: x[2])))[:limit]
+            recs_data_simple = database.execute_query(f"select * from simplerecs where product_id in {tuple(ids_in_cart)}",
+                                                      "")
 
-        sample_size_limit = 10
-        if recs_data[0][2] < sample_size_limit:
-            print('simple')
-            recs = list(set([z for x in recs_data_simple for z in random.sample(x[1], k=len(x[1]))]))[:4]
+            sample_size_limit = 10
+            if recs_data[0][2] < sample_size_limit:
+                print('simple')
+                recs = list(set([z for x in recs_data_simple for z in random.sample(x[1], k=len(x[1]))]))[:limit]
 
+            else:
+                print('bought_together')
+
+                recs = list(set([product for rec in recs_data if rec[2] >= sample_size_limit for product in rec[1] if
+                                 product not in ids_in_cart]))
+                recs = random.sample(recs, k=len(recs))[:limit]
+
+            r_prods = [convert_to_model.toProduct(e) for e in
+                       (database.execute_query("select * from products where product_id in %s", (tuple(recs),)))]
         else:
-            print('bought_together')
-
-
-            recs = list(set([product for rec in recs_data if rec[2] >= sample_size_limit for product in rec[1] if
-                             product not in ids_in_cart]))
-            recs = random.sample(recs, k=len(recs))[:4]
-
-        r_prods = [convert_to_model.toProduct(e) for e in
-                   (database.execute_query("select * from products where product_id in %s", (tuple(recs),)))]
+            try:
+                profile_id = session['profile_id'] if session[
+                                                          'profile_id'] is not None else '5a393d68ed295900010384ca'
+                r_prods = self.recommendations_profile(profile_id, limit=limit)
+            except Exception:
+                r_prods = []
 
         return self.renderpackettemplate('shoppingcart.html', {'itemsincart': i, \
                                                                'r_products': r_prods, \
@@ -450,14 +465,15 @@ class HUWebshop(object):
         return '{"success":true, "itemcount":' + str(self.shoppingcartcount()) + '}'
 
     def changepaginationcount(self):
-        """ This function changes the number of items displayed on the product 
+        """ This function changes the number of items displayed on the product
         listing pages. """
         session['items_per_page'] = int(request.form.get('items_per_page'))
-        # TODO: add method that returns the exact URL the user should be 
+        # TODO: add method that returns the exact URL the user should be
         # returned to, including offset
         return '{"success":true, "refurl":"' + request.form.get('refurl') + '"}'
 
-    # TODO: add @app.errorhandler(404) and @app.errorhandler(405)
+
+# TODO: add @app.errorhandler(404) and @app.errorhandler(405)
 
 
 huw = HUWebshop(app)

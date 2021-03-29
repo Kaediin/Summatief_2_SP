@@ -7,10 +7,14 @@ import controller.db_auth
 
 
 def run(cursor, connection, rec_limit=4):
-    cursor.execute("select count(*) from products")
-    entries = cursor.fetchone()[0]
+    try:
+        cursor.execute("select count(*) from order_based_recs")
+        hasEntries = True if cursor.fetchone()[0] > 0 else False
+    except:
+        connection.rollback()
+        hasEntries = False
 
-    if entries != 34004:
+    if not hasEntries:
         # create table
         # we track the average of how many times the most bought together items were in the same order as item x, we do this so we have an indication of the accuracy of the recommendation:
         # avg_x_shared_orders = 3 -> weak correlation, avg_x_shared_orders = 200 -> very strong correlation.
