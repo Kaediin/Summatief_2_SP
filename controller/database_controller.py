@@ -168,8 +168,8 @@ def fill_db(products, sessions, visitors):
             count_visitors += 1
             if count_visitors % 10000 == 0 or count_visitors == n_visitors or count_visitors == 1:
                 print(f'Visitors: {count_visitors}/{n_visitors}')
-                close_db_connection()
-                open_db_connection()
+                close_db_connection(cursor, connection)
+                cursor, connection = open_db_connection()
 
             recs = get_product_property(visitor, 'recommendations')
             previously_recommended = get_product_property(visitor, 'previously_recommended')
