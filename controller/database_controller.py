@@ -5,9 +5,6 @@ from controller.database_predefined_values import tables
 from algorithms import most_bought_together_algorithm, simple, profiles
 from psycopg2 import sql
 
-connection = None
-cursor = None
-
 
 def instantiate(products, sessions, visitors):
     print('Database tables aan het aanmaken')
@@ -23,26 +20,27 @@ def instantiate(products, sessions, visitors):
     print('Relaties zijn toegekend!')
 
     print('Recommendations worden gemaakt..')
-    open_db_connection()
+    cursor, connection = open_db_connection()
     most_bought_together_algorithm.run(cursor, connection)
     simple.run(cursor, connection)
-    close_db_connection()
+    close_db_connection(cursor, connection)
     print('Recommendations zijn gemaakt!')
 
 
 def open_db_connection():
     """Opens the connection to the SQL database"""
 
-    global connection, cursor
+    # global connection, cursor
     try:
         connection = controller.db_auth.getPostgreSQLConnection(psycopg2)
         cursor = connection.cursor()
+        return cursor, connection
         # print("PostgreSQL connection is open")
     except (Exception, psycopg2.Error) as error:
         print("Error while connecting to PostgreSQL", error)
 
 
-def close_db_connection():
+def close_db_connection(cursor, connection):
     """Closes the connection to the SQL database and commits the queries"""
 
     # closing database connection.
@@ -70,7 +68,7 @@ def fill_db(products, sessions, visitors):
         :param sessions: data from the 'sessions' data file
         """
 
-    open_db_connection()
+    cursor, connection = open_db_connection()
 
     cursor.execute("select count(*) from products")
     entries = cursor.fetchone()[0]
@@ -135,7 +133,7 @@ def fill_db(products, sessions, visitors):
             except (Exception, psycopg2.Error):
                 continue
 
-            insert_product_properties(product, cursor)
+            insert_product_properties(product, cursor, connection)
             try:
                 product_sm = product['sm']
                 cursor.execute(
@@ -159,10 +157,11 @@ def fill_db(products, sessions, visitors):
             except (Exception, psycopg2.Error):
                 continue
 
-        close_db_connection()
-        open_db_connection()
+        close_db_connection(cursor, connection)
+        cursor, connection = open_db_connection()
 
-        create_orders_table(sessions)
+        create_orders_table(sessions, cursor, connection)
+        cursor, connection = open_db_connection()
 
         for visitor in visitors:
 
@@ -212,23 +211,23 @@ def fill_db(products, sessions, visitors):
             except Exception as e:
                 connection.rollback()
 
-    close_db_connection()
+    close_db_connection(cursor, connection)
 
 
 def assign_relations():
     """Assigns foreign keys to relevant tables"""
 
-    open_db_connection()
+    cursor, connection = open_db_connection()
 
     cursor.execute("ALTER TABLE product_sm ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
     cursor.execute("ALTER TABLE product_categories ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
     cursor.execute("ALTER TABLE product_prices ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
     cursor.execute("ALTER TABLE product_properties ADD FOREIGN KEY (product_id) REFERENCES products(product_id);")
 
-    close_db_connection()
+    close_db_connection(cursor, connection)
 
 
-def insert_product_properties(product, cursor):
+def insert_product_properties(product, cursor, connection):
     """Special function to fill the product_properties table
         :param product: data from the 'products' data file
         :param cursor: database connection object
@@ -292,7 +291,7 @@ def insert_product_properties(product, cursor):
 def create_tables():
     """Creates the tables for the SQL database"""
 
-    open_db_connection()
+    cursor, connection = open_db_connection()
 
     for table in tables:
         try:
@@ -300,7 +299,7 @@ def create_tables():
         except psycopg2.errors.DuplicateTable:
             connection.rollback()
 
-    close_db_connection()
+    close_db_connection(cursor, connection)
 
 
 def retrieve_properties(table, properties, returncols=("*")):
@@ -315,16 +314,16 @@ def retrieve_properties(table, properties, returncols=("*")):
     retrieve_properties("products", {"brand": "Airwick"}, ["product_id", "name"])
     will return a list of product_id's and names corresponding to entries who's brand equals "Airwick
     """
-    open_db_connection()
+    cursor, connection = open_db_connection()
     quoted = lambda w: "'" + w + "'"  # can change, is for adding '' around a word, as f-strings do not like backslashes
     try:
         cursor.execute(
             f"SELECT {', '.join(returncols)} FROM {table} WHERE {' AND '.join([e + ' = ' + quoted(properties[e]) for e in properties])}")
         results = cursor.fetchall()
-        close_db_connection()
+        close_db_connection(cursor, connection)
         return results
     except Exception:
-        close_db_connection()
+        close_db_connection(cursor, connection)
 
 
 def get_product_property(product_data, key):
@@ -335,7 +334,7 @@ def get_product_property(product_data, key):
         return None
 
 
-def create_orders_table(sessions):
+def create_orders_table(sessions, cursor, connection):
     n_sessions = sessions.count()
     count_sessions = 0
 
@@ -343,8 +342,8 @@ def create_orders_table(sessions):
         count_sessions += 1
         if count_sessions % 10000 == 0 or count_sessions == n_sessions or count_sessions == 1:
             print(f'Sessions: {count_sessions}/{n_sessions}')
-            close_db_connection()
-            open_db_connection()
+            close_db_connection(cursor, connection)
+            cursor, connection = open_db_connection()
 
         session_id = get_product_property(session, '_id')
         session_start = get_product_property(session, 'session_start')
@@ -373,15 +372,14 @@ def create_orders_table(sessions):
             print(e)
             connection.rollback()
 
-    close_db_connection()
-    open_db_connection()
+    close_db_connection(cursor, connection)
 
 
 def execute_query(query, data, get_results=True):
-    open_db_connection()
+    cursor, connection = open_db_connection()
     cursor.execute(sql.SQL(query), data)
     if get_results:
         results = cursor.fetchall()
-        close_db_connection()
+        close_db_connection(cursor, connection)
         return results
-    close_db_connection()
+    close_db_connection(cursor, connection)
