@@ -1,6 +1,7 @@
 import psycopg2
 import random
 
+
 def run(cursor, connection):
     """
         Drop, then create, the table 'simplerecs', and then fill that table with product ID's and recommended items
@@ -17,7 +18,7 @@ def run(cursor, connection):
             connection.rollback()
             print("Table already exists")
 
-        cursor.execute("select product_id from product_categories where category is not null")
+        cursor.execute("select product_id from product_categories")
         ids = [e[0] for e in cursor.fetchall()]
 
         c = 0
