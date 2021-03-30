@@ -253,6 +253,47 @@ class HUWebshop(object):
 
     """ ..:: Recommendation Functions ::.. """
 
+
+    def prioritize_discount(self, recs, limit):
+        """Give priority to recommendations with (higher) discounts"""
+
+        if(len(recs)>4):
+
+            #get all product_prices data from the DB
+            price_data = database.execute_query(
+                f"select * from product_prices",
+                "")
+
+            #select all the product prices from the cart where the discount is not none(we exclude None so we can use sorted() later)
+            product_prices = [product_price for product_price in price_data if
+                              product_price[0] in recs if product_price[1] is not None]
+
+            #randomize the placement of these prices
+            product_prices = (random.sample(product_prices, len(product_prices)))
+
+            #sort the prices on discount
+            sorted_product_prices = list(reversed(sorted(product_prices, key=lambda x: x[1])))
+
+            #add prices where discount is None
+            sorted_product_prices = sorted_product_prices + [product_price for product_price in price_data if
+                                                                 product_price[0] in recs if product_price[1] is None]
+
+            #select product_ids
+            recs = [x[0] for x in sorted_product_prices]
+
+            #return limit product_ids
+            return recs[:limit]
+
+        else:
+            return recs
+
+    def convert_to_product_list(self,query, data):
+
+        r_prods = [convert_to_model.toProduct(e) for e in
+                   (database.execute_query(query, data))]
+
+        return r_prods
+
     def recommendations_relevant_combination(self, p_id):
         try:
             return [convert_to_model.toProduct(
@@ -382,8 +423,11 @@ class HUWebshop(object):
                                                                 'r_type': list(self.recommendationtypes.keys())[1], \
                                                                 'r_string': list(self.recommendationtypes.values())[1]})
 
+
+
     def shoppingcart(self):
         """ This function renders the shopping cart for the user."""
+
         i = []
         limit = 4
         for tup in session['shopping_cart']:
@@ -416,10 +460,11 @@ class HUWebshop(object):
 
                 recs = list(set([product for rec in recs_data if rec[2] >= sample_size_limit for product in rec[1] if
                                  product not in ids_in_cart]))
-                recs = random.sample(recs, k=len(recs))[:limit]
 
-            r_prods = [convert_to_model.toProduct(e) for e in
-                       (database.execute_query("select * from products where product_id in %s", (tuple(recs),)))]
+                recs = self.prioritize_discount(recs,4)
+
+            r_prods = self.convert_to_product_list("select * from products where product_id in %s",(tuple(recs),))
+
         else:
             try:
                 profile_id = session['profile_id'] if session[
@@ -429,6 +474,7 @@ class HUWebshop(object):
                 r_prods = self.recommendations_profile(profile_id, limit=limit)
             except Exception:
                 r_prods = [convert_to_model.toProduct(e) for e in database.getRandomProducts([], limit)]
+
 
         return self.renderpackettemplate('shoppingcart.html', {'itemsincart': i, \
                                                                'r_products': r_prods, \
