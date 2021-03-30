@@ -403,7 +403,6 @@ def getRandomProducts(categories: list, limit):
             .replace('luiers & verschonen', 'luiers en verschonen')
             .replace('snacks & snoep', 'snacks en snoep')
             .replace('koffie & thee', 'koffie en thee') for e in categories]
-    print(f'Categories: {catFiltered}')
     if len(categories) == 0:
         return execute_query("select * from products where name is not null order by random() limit %s", (limit,))
     elif len(categories) == 1:

@@ -1,13 +1,14 @@
 import controller.database_controller as database
 import itertools, random
+from algorithms import prioritze_discount
 
 
-def get_recs(visitor_id):
-    products = known_products(visitor_id)
+def get_recs(visitor_id, limit):
+    products = known_products(visitor_id, limit)
     return products
 
 
-def known_products(visitor_id):
+def known_products(visitor_id, limit):
     results = list(database.execute_query(
         "select previously_recommended, viewed_before, similars from visitor_recs where visitor_id = %s",
         (visitor_id,))[0])
@@ -41,9 +42,10 @@ def known_products(visitor_id):
             popular_category_product_ids = database.execute_query(
                 "select product_id from product_categories where sub_sub_category = %s",
                 (most_popular_category, ))
-            popular_category_product_ids = list(itertools.chain.from_iterable(popular_category_product_ids))
+            popular_category_product_ids = prioritze_discount.run(list(itertools.chain.from_iterable(popular_category_product_ids)), limit)
+            print(popular_category_product_ids)
             products_results = database.execute_query("select * from products where product_id in %s", (tuple(popular_category_product_ids), ))
-            random.shuffle(products_results)
+            # random.shuffle(products_results)
             return products_results
         except Exception as e:
             print(e.args)

@@ -253,40 +253,6 @@ class HUWebshop(object):
 
     """ ..:: Recommendation Functions ::.. """
 
-
-    def prioritize_discount(self, recs, limit):
-        """Give priority to recommendations with (higher) discounts"""
-
-        if(len(recs)>4):
-
-            #get all product_prices data from the DB
-            price_data = database.execute_query(
-                f"select * from product_prices",
-                "")
-
-            #select all the product prices from the cart where the discount is not none(we exclude None so we can use sorted() later)
-            product_prices = [product_price for product_price in price_data if
-                              product_price[0] in recs if product_price[1] is not None]
-
-            #randomize the placement of these prices
-            product_prices = (random.sample(product_prices, len(product_prices)))
-
-            #sort the prices on discount
-            sorted_product_prices = list(reversed(sorted(product_prices, key=lambda x: x[1])))
-
-            #add prices where discount is None
-            sorted_product_prices = sorted_product_prices + [product_price for product_price in price_data if
-                                                                 product_price[0] in recs if product_price[1] is None]
-
-            #select product_ids
-            recs = [x[0] for x in sorted_product_prices]
-
-            #return limit product_ids
-            return recs[:limit]
-
-        else:
-            return recs
-
     def convert_to_product_list(self,query, data):
 
         r_prods = [convert_to_model.toProduct(e) for e in
@@ -333,7 +299,7 @@ class HUWebshop(object):
         #     querycursor = self.database.products.find(queryfilter, self.productfields)
         #     resultlist = list(map(self.prepproduct, list(querycursor)))
         #     return resultlist
-        prods = profiles.get_recs(profile_id)
+        prods = profiles.get_recs(profile_id, limit)
         prods_objects = [convert_to_model.toProduct(e) for e in prods[:limit]]
         # result = database.retrieve_properties("products", {"brand": "Andrelon"})[:limit]
         # prods = [convert_to_model.toProduct(e) for e in result]
@@ -351,30 +317,16 @@ class HUWebshop(object):
         nononescats = [e for e in catlist if e is not None]
         skipindex = session['items_per_page'] * (page - 1)
 
-        # catcombos = []
-        # for k in self.categoryindex:
-        #     if '_count' == k: continue
-        #     for sk in self.categoryindex[k]:
-        #         if '_count' == sk: continue
-        #         for ssk in self.categoryindex[k][sk]:
-        #             if '_count' == ssk: continue
-        #             catcombos.append([k, sk, ssk])
-        #         catcombos.append([k, sk])
-        #     catcombos.append([k])
-        #
-        # for catIter in catcombos:
-        #     print(database.getRandomProducts(catIter, 1))
-
         """ Get all products (this need to be based on profile) """
         try:
             profile_id = session['profile_id'] if session['profile_id'] is not None else None
-            if profile_id is None or len(catlist) > 0:
+            if profile_id is None or len(nononescats) > 0:
                 raise Exception
             prodlist = self.recommendations_profile(profile_id, limit=limit)
             if len(prodlist) < limit:
                 raise Exception
-        except Exception as e:
-            print(e.args, 'Running default')
+        except Exception as error:
+            print(error.args)
             prodlist = [convert_to_model.toProduct(e) for e in database.getRandomProducts(nononescats, limit)]
 
         """ Get all products based on profile products recommendations """
