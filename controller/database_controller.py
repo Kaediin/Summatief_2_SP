@@ -70,8 +70,12 @@ def fill_db(products, sessions, visitors):
 
     cursor, connection = open_db_connection()
 
-    cursor.execute("select count(*) from products")
-    entries = cursor.fetchone()[0]
+    try:
+        cursor.execute("select count(*) from products")
+        entries = cursor.fetchone()[0]
+    except:
+        connection.rollback()
+        entries = 0
 
     if entries != 34004:
 
