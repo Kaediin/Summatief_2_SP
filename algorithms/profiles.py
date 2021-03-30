@@ -4,7 +4,6 @@ import itertools, random
 
 def get_recs(visitor_id):
     products = known_products(visitor_id)
-    # products.extend(based_on_orders(visitor_id, products))
     return products
 
 
@@ -49,17 +48,4 @@ def known_products(visitor_id):
         except Exception as e:
             print(e.args)
             break
-    return products
-
-def based_on_orders(vistor_id, products):
-    buids = database.execute_query("select buids from visitors where visitor_id = %s", (vistor_id,))[0][0]
-    product_ids = set()
-    for buid in buids:
-        print(buid)
-        order_products = database.execute_query("select products from orders where buid = %s", (buid,))
-        for p_id in order_products:
-            [product_ids.add(e) for e in p_id[0]]
-
-    # get recommendations based on these ids!
-    print(product_ids)
     return products
