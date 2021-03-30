@@ -383,3 +383,34 @@ def execute_query(query, data, get_results=True):
         close_db_connection(cursor, connection)
         return results
     close_db_connection(cursor, connection)
+
+
+def getRandomProducts(categories: list, limit):
+    catFiltered = [
+        str(e)
+            .replace('-', ' ')
+            .replace(' en ', ' & ')
+            .replace('make up & geuren', 'make-up & geuren')
+            .replace('vitaminen & supplementen', 'vitaminen en supplementen')
+            .replace('toilet & keuken', 'toilet en keuken')
+            .replace('wassen & schoonmaken', 'wassen en schoonmaken')
+            .replace('outdoor & vrije tijd', 'outdoor en vrije tijd')
+            .replace('knutselen & hobby', 'knutselen en hobby')
+            .replace('babys & kinderen', "baby's en kinderen")
+            .replace('make up accessoires', 'make-up accessoires')
+            .replace('geuren & geschenkset', 'geuren en geschenkset')
+            .replace('make up', 'make-up')
+            .replace('luiers & verschonen', 'luiers en verschonen')
+            .replace('snacks & snoep', 'snacks en snoep')
+            .replace('koffie & thee', 'koffie en thee') for e in categories]
+    print(f'Categories: {catFiltered}')
+    if len(categories) == 0:
+        return execute_query("select * from products where name is not null order by random() limit %s", (limit,))
+    elif len(categories) == 1:
+        return execute_query(
+            "select * from products where name is not null and lower(category) like lower(%s) order by random() limit %s",
+            (catFiltered[0], limit))
+    elif len(categories) == 2:
+        return execute_query("select * from products where product_id in %s", (tuple(execute_query(
+            "select product_id from product_categories where lower(sub_category) like lower(%s) order by random() limit %s",
+            (catFiltered[1], limit))),))

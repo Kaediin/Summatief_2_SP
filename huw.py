@@ -305,43 +305,45 @@ class HUWebshop(object):
         can retrieve from the database, based on the URL path provided (which
         corresponds to product categories). """
         limit = 8
+        rec_limit = 4
         catlist = [cat1, cat2, cat3, cat4]
         nononescats = [e for e in catlist if e is not None]
-        # queryfilter = {}
-        # for k, v in enumerate(catlist):
-        #     if v is not None:
-        # queryfilter[self.catlevels[k]] = self.catdecode[v]
-        # nononescats.append(v)
-        # querycursor = self.database.products.find(queryfilter, self.productfields)
-        # prodcount = self.database.products.count_documents(queryfilter)
         skipindex = session['items_per_page'] * (page - 1)
-        # querycursor.skip(skipindex)
-        # querycursor.limit(session['items_per_page'])
+
+        # catcombos = []
+        # for k in self.categoryindex:
+        #     if '_count' == k: continue
+        #     for sk in self.categoryindex[k]:
+        #         if '_count' == sk: continue
+        #         for ssk in self.categoryindex[k][sk]:
+        #             if '_count' == ssk: continue
+        #             catcombos.append([k, sk, ssk])
+        #         catcombos.append([k, sk])
+        #     catcombos.append([k])
+        #
+        # for catIter in catcombos:
+        #     print(database.getRandomProducts(catIter, 1))
 
         """ Get all products (this need to be based on profile) """
         try:
-            profile_id = session['profile_id'] if session[
-                                                      'profile_id'] is not None else None
+            profile_id = session['profile_id'] if session['profile_id'] is not None else None
+            if profile_id is None or len(catlist) > 0:
+                raise Exception
             prodlist = self.recommendations_profile(profile_id, limit=limit)
             if len(prodlist) < limit:
                 raise Exception
         except Exception as e:
-            print(e.args)
-            print('Running default')
-            prodlist = [convert_to_model.toProduct(e) for e in
-                        database.execute_query(
-                            "select * from products where name is not null order by random() limit 8", ()) if
-                        e[10] is not None]
+            print(e.args, 'Running default')
+            prodlist = [convert_to_model.toProduct(e) for e in database.getRandomProducts(nononescats, limit)]
 
         """ Get all products based on profile products recommendations """
         recs = []
-        i = 0
-        while len(recs) < limit:
-            for rec in [self.recommendations_simple(prodlist[i].product_id)]:
-                if type(rec) == list:
-                    for recommendation in rec:
-                        recs.append(recommendation)
-            i += 1
+        for product in prodlist:
+            simple_recs = self.recommendations_simple(product.product_id)
+            [recs.append(e) for e in simple_recs if len(recs) != rec_limit]
+            if len(recs) == rec_limit:
+                break
+
         if len(nononescats) > 1:
             pagepath = "/producten/" + ("/".join(nononescats)) + "/"
         else:
@@ -358,7 +360,7 @@ class HUWebshop(object):
                                                            'nextpage': pagepath + str(page + 1) if (session[
                                                                                                         'items_per_page'] * page < len(
                                                                prodlist)) else False,
-                                                           'r_products': recs[:4],
+                                                           'r_products': recs[:rec_limit],
                                                            'r_type': list(self.recommendationtypes.keys())[0],
                                                            'r_string': list(self.recommendationtypes.values())[0]
                                                            })
@@ -389,7 +391,6 @@ class HUWebshop(object):
                 database.retrieve_properties("products", {"product_id": f"{tup[0]}"})[0])
             product = self.prepproduct(prod_obj)
             product["itemcount"] = tup[1]
-            # product["price"] = float(product["price"].rstrip('0').replace('.', '').replace(',', ''))
             i.append(product)
 
         ids_in_cart = [x[0] for x in session['shopping_cart']]
@@ -397,11 +398,13 @@ class HUWebshop(object):
         if len(ids_in_cart) == 1:
             ids_in_cart.append('')
         if len(ids_in_cart) > 0:
-            recs_data = database.execute_query(f"select * from order_based_recs where product_id in {tuple(ids_in_cart)}",
-                                               "")
+            recs_data = database.execute_query(
+                f"select * from order_based_recs where product_id in {tuple(ids_in_cart)}",
+                "")
             recs_data = list(reversed(sorted(recs_data, key=lambda x: x[2])))[:limit]
-            recs_data_simple = database.execute_query(f"select * from simplerecs where product_id in {tuple(ids_in_cart)}",
-                                                      "")
+            recs_data_simple = database.execute_query(
+                f"select * from simplerecs where product_id in {tuple(ids_in_cart)}",
+                "")
 
             sample_size_limit = 10
             if recs_data[0][2] < sample_size_limit:
@@ -420,10 +423,12 @@ class HUWebshop(object):
         else:
             try:
                 profile_id = session['profile_id'] if session[
-                                                          'profile_id'] is not None else '5a393d68ed295900010384ca'
+                                                          'profile_id'] is not None else None
+                if profile_id is None:
+                    raise Exception
                 r_prods = self.recommendations_profile(profile_id, limit=limit)
             except Exception:
-                r_prods = []
+                r_prods = [convert_to_model.toProduct(e) for e in database.getRandomProducts([], limit)]
 
         return self.renderpackettemplate('shoppingcart.html', {'itemsincart': i, \
                                                                'r_products': r_prods, \
