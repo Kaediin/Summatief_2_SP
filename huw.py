@@ -379,7 +379,7 @@ class HUWebshop(object):
 
 
     def cart_alg_selection(self,limit):
-        "code that decides what algorithm to use in the shopping cart based on the accuracy of the recommendations"
+        "code that decides what algorithm to use in the shopping cart based on the accuracy of the recommendations, returns *limit* recommendations"
 
         ids_in_cart = [x[0] for x in session['shopping_cart']]
 
