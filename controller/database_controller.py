@@ -2,7 +2,7 @@ import psycopg2
 import controller.db_auth
 from model.product_properties import ProductProperties
 from controller.database_predefined_values import tables
-from algorithms import most_bought_together_algorithm, simple, profiles
+from algorithms import most_bought_together_algorithm, simple, profiles, property_matching
 from psycopg2 import sql
 
 
@@ -21,9 +21,11 @@ def instantiate(products, sessions, visitors):
 
     print('Recommendations worden gemaakt..')
     cursor, connection = open_db_connection()
+    property_matching.run(cursor,connection)
     most_bought_together_algorithm.run(cursor, connection)
     simple.run(cursor, connection)
     close_db_connection(cursor, connection)
+
     print('Recommendations zijn gemaakt!')
 
 
