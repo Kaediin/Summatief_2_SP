@@ -402,7 +402,7 @@ class HUWebshop(object):
                 recs = list(set([product for rec in recs_data if rec[2] >= sample_size_limit for product in rec[1] if
                                  product not in ids_in_cart]))
 
-                recs = prioritze_discount.run(recs, 4)
+                recs = prioritze_discount.prioritize_discount(recs, 4)
 
             r_prods = self.convert_to_product_list("select * from products where product_id in %s", (tuple(recs),))
 
