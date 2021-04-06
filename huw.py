@@ -398,7 +398,7 @@ class HUWebshop(object):
         else:
             try:
                 profile_id = session['profile_id'] if session[
-                                                          'profile_id'] is not None else None
+                                                          'profile_id'] is not None else '5a393d68ed295900010384ca'
                 if profile_id is None:
                     raise Exception
                 r_prods = homepage.get_profile_recommendations(profile_id, limit=limit)
