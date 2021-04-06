@@ -1,7 +1,8 @@
 import random
 import controller.database_controller as database
-def run(recs, limit):
+def prioritize_discount(recs, limit):
     """Give priority to recommendations with (higher) discounts"""
+
     if len(recs) > 4:
         # get all product_prices data from the DB
         price_data = database.execute_query(

@@ -13,8 +13,7 @@ def create_table_property_matching(cursor, connection):
 
     if not hasEntries:
         # create table
-        # we track the average of how many times the most bought together items were in the same order as item x, we do this so we have an indication of the accuracy of the recommendation:
-        # avg_x_shared_orders = 3 -> weak correlation, avg_x_shared_orders = 200 -> very strong correlation.
+
         try:
             cursor.execute(
                 f"create table property_matching_recs (product_id varchar primary key, recommendations varchar[], weighted_match_rate float)"

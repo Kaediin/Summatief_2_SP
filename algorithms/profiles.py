@@ -42,7 +42,7 @@ def known_products(visitor_id, limit):
             popular_category_product_ids = database.execute_query(
                 "select product_id from product_categories where sub_sub_category = %s",
                 (most_popular_category, ))
-            popular_category_product_ids = prioritze_discount.run(list(itertools.chain.from_iterable(popular_category_product_ids)), limit)
+            popular_category_product_ids = prioritze_discount.prioritize_discount(list(itertools.chain.from_iterable(popular_category_product_ids)), limit)
             print(popular_category_product_ids)
             products_results = database.execute_query("select * from products where product_id in %s", (tuple(popular_category_product_ids), ))
             # random.shuffle(products_results)
