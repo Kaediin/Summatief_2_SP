@@ -21,7 +21,7 @@ def instantiate(products, sessions, visitors):
 
     print('Recommendations worden gemaakt..')
     cursor, connection = open_db_connection()
-    property_matching.create_table_property_matching(cursor,connection)
+    property_matching.create_table_property_matching(cursor, connection)
     most_bought_together_algorithm.create_table_most_bought_together(cursor, connection)
     simple.run(cursor, connection)
     close_db_connection(cursor, connection)
@@ -337,6 +337,7 @@ def get_product_property(product_data, key):
 
 
 def create_orders_table(sessions, cursor, connection):
+    """ this creates the order table and other order-related stuff for a proper database structure """
     n_sessions = sessions.count()
     count_sessions = 0
 
@@ -378,6 +379,8 @@ def create_orders_table(sessions, cursor, connection):
 
 
 def execute_query(query, data, get_results=True):
+    """ execute query and return results. This is a compact version of the built in SQL function.
+    This is also accessible through imports from other files. """
     cursor, connection = open_db_connection()
     cursor.execute(sql.SQL(query), data)
     if get_results:
@@ -388,6 +391,8 @@ def execute_query(query, data, get_results=True):
 
 
 def get_based_on_categories(categories: list, limit):
+    """ get products based on categories """
+    """ Filter categories so they match with the PostgreSQL texts """
     catFiltered = [
         str(e)
             .replace('-', ' ')
@@ -405,6 +410,9 @@ def get_based_on_categories(categories: list, limit):
             .replace('luiers & verschonen', 'luiers en verschonen')
             .replace('snacks & snoep', 'snacks en snoep')
             .replace('koffie & thee', 'koffie en thee') for e in categories]
+
+    """ return the results from the deepest category. we want the deepest (sub_sub) 
+    because those products are more alike """
     if len(categories) == 0:
         return execute_query("select * from products where name is not null limit %s", (limit,))
     elif len(categories) == 1:

@@ -283,16 +283,6 @@ class HUWebshop(object):
     def recommendations_seasonal(self, date, limit=4):
         pass
 
-        # def recommendations_profile(self, profile_id, limit=4):
-        """ This function returns the recommendations from the provided page
-        and context, by sending a request to the designated recommendation
-        service. At the moment, it only transmits the profile ID and the number
-        of expected recommendations; to have more user information in the REST
-        request, this function would have to change.
-
-        Profile recommendation here! """
-        # return profiles.get_recs(profile_id, limit)
-
     """ ..:: Full Page Endpoints ::.. """
 
     def productpage(self, cat1=None, cat2=None, cat3=None, cat4=None, page=1):
@@ -344,7 +334,6 @@ class HUWebshop(object):
             f"select recommendations, weighted_match_rate from property_matching_recs where product_id = '{product.product_id}'",
             "")
 
-        print(recs_data)
         if (recs_data[0][1] > 50):
             print('property_matching')
             recs = (recs_data[0][0])
@@ -412,9 +401,9 @@ class HUWebshop(object):
                                                           'profile_id'] is not None else None
                 if profile_id is None:
                     raise Exception
-                r_prods = self.recommendations_profile(profile_id, limit=limit)
+                r_prods = homepage.get_profile_recommendations(profile_id, limit=limit)
             except Exception:
-                r_prods = [convert_to_model.toProduct(e) for e in database.getRandomProducts([], limit)]
+                r_prods = [convert_to_model.toProduct(e) for e in database.get_based_on_categories([], limit)]
 
         return r_prods
 

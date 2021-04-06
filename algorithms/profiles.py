@@ -4,19 +4,19 @@ from algorithms import prioritze_discount
 
 
 def get_recs(visitor_id, limit):
-    products = known_products(visitor_id, limit)
-    return products
+    """ get recommendations based on visitor id """
 
-
-def known_products(visitor_id, limit):
-    results = list(database.execute_query(
+    # get related products to a profile """
+    profile_columns = list(database.execute_query(
         "select previously_recommended, viewed_before, similars from visitor_recs where visitor_id = %s",
         (visitor_id,))[0])
     try:
-        all_product_ids = tuple(itertools.chain.from_iterable(results))
+        # flatten the lists (profile_columns can conatins list in lists etc.)
+        all_product_ids = tuple(itertools.chain.from_iterable(profile_columns))
     except TypeError:
         return []
 
+    # create dict with empty dicts for every category type and keep count
     category_counter = {'main': {}, 'sub': {}, 'sub_sub': {}}
 
     cat_results = database.execute_query(
@@ -34,16 +34,20 @@ def known_products(visitor_id, limit):
             else:
                 category_counter[layer][row[i]] = 1
 
+    # loop trough category types starting from deepest (starting wiht sub_sub)
     for layer in layers:
         try:
+            # Calculate recommendations from the category type and add them to a list
             category_counter = {k: v for k, v in
                                 reversed(sorted(category_counter[layer].items(), key=lambda item: item[1]))}
             most_popular_category = list(category_counter.keys())[0]
             popular_category_product_ids = database.execute_query(
                 "select product_id from product_categories where sub_sub_category = %s",
-                (most_popular_category, ))
-            popular_category_product_ids = prioritze_discount.prioritize_discount(list(itertools.chain.from_iterable(popular_category_product_ids)), limit)
-            products_results = database.execute_query("select * from products where product_id in %s", (tuple(popular_category_product_ids), ))
+                (most_popular_category,))
+            popular_category_product_ids = prioritze_discount.prioritize_discount(
+                list(itertools.chain.from_iterable(popular_category_product_ids)), limit)
+            products_results = database.execute_query("select * from products where product_id in %s",
+                                                      (tuple(popular_category_product_ids),))
             return products_results
         except Exception as e:
             print(e.args)
