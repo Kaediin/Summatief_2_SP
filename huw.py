@@ -291,19 +291,7 @@ class HUWebshop(object):
         request, this function would have to change.
 
         Profile recommendation here! """
-
-        # resp = requests.get(self.recseraddress + "/" + session['profile_id'] + "/" + str(count))
-        # if resp.status_code == 200:
-        #     recs = eval(resp.content.decode())
-        #     queryfilter = {"_id": {"$in": recs}}
-        #     querycursor = self.database.products.find(queryfilter, self.productfields)
-        #     resultlist = list(map(self.prepproduct, list(querycursor)))
-        #     return resultlist
-        prods = profiles.get_recs(profile_id, limit)
-        prods_objects = [convert_to_model.toProduct(e) for e in prods[:limit]]
-        # result = database.retrieve_properties("products", {"brand": "Andrelon"})[:limit]
-        # prods = [convert_to_model.toProduct(e) for e in result]
-        return prods_objects
+        return profiles.get_recs(profile_id, limit)
 
     """ ..:: Full Page Endpoints ::.. """
 
@@ -311,7 +299,7 @@ class HUWebshop(object):
         """ This function renders the product page template with the products it
         can retrieve from the database, based on the URL path provided (which
         corresponds to product categories). """
-        limit = 8
+        limit = session['items_per_page']
         rec_limit = 4
         catlist = [cat1, cat2, cat3, cat4]
         nononescats = [e for e in catlist if e is not None]
@@ -319,19 +307,21 @@ class HUWebshop(object):
 
         """ Get all products (this need to be based on profile) """
         try:
-            profile_id = session['profile_id'] if session['profile_id'] is not None else None
+            profile_id = session['profile_id'] if session['profile_id'] is not None else '5a393d68ed295900010384ca'
             if profile_id is None or len(nononescats) > 0:
                 raise Exception
-            prodlist = self.recommendations_profile(profile_id, limit=limit)
-            if len(prodlist) < limit:
+            retrieved_ids = self.recommendations_profile(profile_id, limit=34004)
+            if len(retrieved_ids) < limit:
                 raise Exception
         except Exception as error:
             print(error.args)
-            prodlist = [convert_to_model.toProduct(e) for e in database.getRandomProducts(nononescats, limit)]
+            retrieved_ids = [e for e in database.get_based_on_categories(nononescats, 34004)]
 
         """ Get all products based on profile products recommendations """
+        prodList = [convert_to_model.toProduct(e) for e in retrieved_ids[skipindex:(skipindex+limit)]]
+
         recs = []
-        for product in prodlist:
+        for product in prodList:
             simple_recs = self.recommendations_simple(product.product_id)
             [recs.append(e) for e in simple_recs if len(recs) != rec_limit]
             if len(recs) == rec_limit:
@@ -342,17 +332,17 @@ class HUWebshop(object):
         else:
             pagepath = "/producten/"
 
-        return self.renderpackettemplate('products.html', {'products': prodlist,
-                                                           'productcount': len(prodlist),
+        return self.renderpackettemplate('products.html', {'products': prodList,
+                                                           'productcount': len(retrieved_ids),
                                                            'pstart': skipindex + 1,
                                                            'pend': skipindex + session['items_per_page'] if session[
                                                                                                                 'items_per_page'] > 0 else len(
-                                                               prodlist),
+                                                               retrieved_ids),
                                                            'prevpage': pagepath + str(page - 1) if (
                                                                    page > 1) else False,
                                                            'nextpage': pagepath + str(page + 1) if (session[
                                                                                                         'items_per_page'] * page < len(
-                                                               prodlist)) else False,
+                                                               retrieved_ids)) else False,
                                                            'r_products': recs[:rec_limit],
                                                            'r_type': list(self.recommendationtypes.keys())[0],
                                                            'r_string': list(self.recommendationtypes.values())[0]
@@ -427,7 +417,7 @@ class HUWebshop(object):
                 recs = list(set([product for rec in recs_data if rec[2] >= sample_size_limit for product in rec[1] if
                                  product not in ids_in_cart]))
 
-                recs = prioritze_discount.prioritize_discount(recs,4)
+                recs = prioritze_discount.run(recs,4)
 
             r_prods = self.convert_to_product_list("select * from products where product_id in %s", (tuple(recs),))
 

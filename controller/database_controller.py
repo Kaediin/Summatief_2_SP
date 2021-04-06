@@ -387,7 +387,7 @@ def execute_query(query, data, get_results=True):
     close_db_connection(cursor, connection)
 
 
-def getRandomProducts(categories: list, limit):
+def get_based_on_categories(categories: list, limit):
     catFiltered = [
         str(e)
             .replace('-', ' ')
