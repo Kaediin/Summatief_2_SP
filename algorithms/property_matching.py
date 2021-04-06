@@ -1,9 +1,8 @@
 import controller.database_controller as database
-import controller
 
 
-def run(cursor, connection):
-    """Look at all relevant product properties to decide the best matching recommendation, returns a list with a list of recs and an average match rate"""
+def create_table_property_matching(cursor, connection):
+    """create and fill a table based on the property_matching() function"""
 
     try:
         cursor.execute("select count(*) from property_matching_recs")
@@ -36,7 +35,7 @@ def run(cursor, connection):
                                                         inner join product_categories pc on pc.product_id = pp.product_id
                                                         inner join products on products.product_id = pp.product_id """, "")
 
-        # replacing ' with '' so LIKE in the sql statement doesn't fuck up
+        # replacing ' with '' so LIKE in the sql statement doesn't crash
         id_list = [id[0].replace("'", "''") for id in data]
 
         for count, id in enumerate(id_list):
@@ -53,6 +52,8 @@ def run(cursor, connection):
                 print(f"{count}/{len(id_list)}")
 
 def property_matching(product_id, limit, price_data):
+    """Look at all relevant product properties to decide the best matching recommendation, returns a list with a list of recs and an average match rate"""
+
     # column numbers have been divided in different weight classes, product properties have different weight in deciding what to recommend
     w2 = [3, 4, 7, 8, 9, 12, 13, 15, 16, 17, 18, 19, 20, 22, 24, 25, 27]
     w5 = [5, 11, 21, 23, 26, 28]

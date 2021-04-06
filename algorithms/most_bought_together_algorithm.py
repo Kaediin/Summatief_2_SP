@@ -1,12 +1,8 @@
 import operator
 
-import psycopg2
+def create_table_most_bought_together(cursor, connection, rec_limit=4):
+    """creates a table with recommendations based on what products were bought most often with other prodcuts, and a score how often that happened on average"""
 
-import controller.db_auth
-import controller.db_auth
-
-
-def run(cursor, connection, rec_limit=4):
     try:
         cursor.execute("select count(*) from order_based_recs")
         hasEntries = True if cursor.fetchone()[0] > 0 else False
@@ -32,7 +28,7 @@ def run(cursor, connection, rec_limit=4):
         )
         data = cursor.fetchall()
 
-        # replacing ' with '' so LIKE in the sql statement doesn't fuck up
+        # replacing ' with '' so LIKE in the sql statement doesn't crash
         id_list = [id[0].replace("'", "''") for id in data]
 
         q = f"""select products

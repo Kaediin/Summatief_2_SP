@@ -21,8 +21,8 @@ def instantiate(products, sessions, visitors):
 
     print('Recommendations worden gemaakt..')
     cursor, connection = open_db_connection()
-    property_matching.run(cursor,connection)
-    most_bought_together_algorithm.run(cursor, connection)
+    property_matching.create_table_property_matching(cursor,connection)
+    most_bought_together_algorithm.create_table_most_bought_together(cursor, connection)
     simple.run(cursor, connection)
     close_db_connection(cursor, connection)
 
