@@ -26,11 +26,14 @@ tables = {'products': [('product_id', 'varchar PRIMARY KEY'), ('brand', 'varchar
                                  ('weekdeal_from', 'varchar NULL'), ('weekdeal_to', 'varchar NULL')],
           'product_sm': [('product_id', 'varchar PRIMARY KEY'), ('last_updated', 'timestamp'), ('type', 'varchar'),
                          ('is_active', 'boolean')],
-          'visitors':[('visitor_id', 'varchar PRIMARY KEY'), ('buids', 'varchar[]')],
-          'visitor_recs':[('visitor_id', 'varchar PRIMARY KEY'),('previously_recommended', 'varchar[]'),('viewed_before', 'varchar[]'),('similars', 'varchar[]')],
+          'visitors': [('visitor_id', 'varchar PRIMARY KEY'), ('buids', 'varchar[]')],
+          'visitor_recs': [('visitor_id', 'varchar PRIMARY KEY'), ('previously_recommended', 'varchar[]'),
+                           ('viewed_before', 'varchar[]'), ('similars', 'varchar[]')],
           'orders': [('session_id', 'varchar PRIMARY KEY'), ('session_start', 'timestamp'),
-                     ('session_end', 'timestamp'), ('buid', 'varchar'), ('products', 'varchar[]')]
+                     ('session_end', 'timestamp'), ('buid', 'varchar'), ('products', 'varchar[]')],
+          'property_matching_recs': [('product_id', 'varchar PRIMARY KEY'), ('recommendations', 'varchar[]'),
+                                     ('weighted_match_rate', 'float')],
+          'order_based_recs': [('product_id', 'varchar PRIMARY KEY'), ('recommendations', 'varchar[]'),
+                               ('avg_x_shared_orders', 'int')],
+          'simplerecs': [('product_id', 'varchar PRIMARY KEY'), ('recommendations', 'varchar[]')]
           }
-
-
-
