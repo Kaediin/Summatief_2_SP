@@ -419,7 +419,8 @@ class HUWebshop(object):
             product["itemcount"] = tup[1]
             i.append(product)
 
-        r_prods = self.cart_alg_selection(4)
+        r_prods = [convert_to_model.toProduct(e) if type(e) == tuple else e for e in self.cart_alg_selection(4)]
+        print(r_prods)
 
         return self.renderpackettemplate('shoppingcart.html', {'itemsincart': i, \
                                                                'r_products': r_prods, \
