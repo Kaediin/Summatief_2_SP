@@ -7,7 +7,7 @@ import pprint
 from controller import database_controller as database
 from controller import db_auth
 from model import convert_to_model
-from algorithms import profiles, prioritze_discount,property_matching
+from algorithms import profiles, prioritze_discount, property_matching, homepage
 
 # The secret key used for session encryption is randomly generated every time
 # the server is started up. This means all session data (including the 
@@ -253,7 +253,7 @@ class HUWebshop(object):
 
     """ ..:: Recommendation Functions ::.. """
 
-    def convert_to_product_list(self,query, data):
+    def convert_to_product_list(self, query, data):
 
         r_prods = [convert_to_model.toProduct(e) for e in
                    (database.execute_query(query, data))]
@@ -283,7 +283,7 @@ class HUWebshop(object):
     def recommendations_seasonal(self, date, limit=4):
         pass
 
-    def recommendations_profile(self, profile_id, limit=4):
+        # def recommendations_profile(self, profile_id, limit=4):
         """ This function returns the recommendations from the provided page
         and context, by sending a request to the designated recommendation
         service. At the moment, it only transmits the profile ID and the number
@@ -291,7 +291,7 @@ class HUWebshop(object):
         request, this function would have to change.
 
         Profile recommendation here! """
-        return profiles.get_recs(profile_id, limit)
+        # return profiles.get_recs(profile_id, limit)
 
     """ ..:: Full Page Endpoints ::.. """
 
@@ -305,29 +305,18 @@ class HUWebshop(object):
         nononescats = [e for e in catlist if e is not None]
         skipindex = session['items_per_page'] * (page - 1)
 
-        """ Get all products (this need to be based on profile) """
-        try:
-            profile_id = session['profile_id'] if session['profile_id'] is not None else '5a393d68ed295900010384ca'
-            if profile_id is None or len(nononescats) > 0:
-                raise Exception
-            retrieved_ids = self.recommendations_profile(profile_id, limit=34004)
-            if len(retrieved_ids) < limit:
-                raise Exception
-        except Exception as error:
-            print(error.args)
-            retrieved_ids = [e for e in database.get_based_on_categories(nononescats, 34004)]
+        """ Get all products (this need to be based on profile if has profile id) """
+        profile_id = session['profile_id'] if session['profile_id'] is not None else '5a393d68ed295900010384ca'
+        retrieved_ids = homepage.get_recommendations(profile_id, nononescats, limit)
 
-        """ Get all products based on profile products recommendations """
-        prodList = [convert_to_model.toProduct(e) for e in retrieved_ids[skipindex:(skipindex+limit)]]
+        """ Convert the recommended ids to product objects """
+        prodList = [convert_to_model.toProduct(e) for e in retrieved_ids[skipindex:(skipindex + limit)]]
 
-        recs = []
-        for product in prodList:
-            simple_recs = self.recommendations_simple(product.product_id)
-            [recs.append(e) for e in simple_recs if len(recs) != rec_limit]
-            if len(recs) == rec_limit:
-                break
+        """ Get 'anderen kochten ook' recommendations """
+        recs = homepage.get_anderen_kochten_ook(prodList, rec_limit)
 
-        if len(nononescats) > 1:
+        """ Set the url path to match the categries and page we are in """
+        if len(nononescats) > 0:
             pagepath = "/producten/" + ("/".join(nononescats)) + "/"
         else:
             pagepath = "/producten/"
@@ -347,9 +336,9 @@ class HUWebshop(object):
                                                            'r_type': list(self.recommendationtypes.keys())[0],
                                                            'r_string': list(self.recommendationtypes.values())[0]
                                                            })
-    def product_detail_alg_selection(self,product):
-        "code that decides what algorithm to use in the product_details based on the accuracy of the recommendations"
 
+    def product_detail_alg_selection(self, product):
+        "code that decides what algorithm to use in the product_details based on the accuracy of the recommendations"
 
         recs_data = database.execute_query(
             f"select recommendations, weighted_match_rate from property_matching_recs where product_id = '{product.product_id}'",
@@ -380,17 +369,13 @@ class HUWebshop(object):
             # TODO: 404 page?
             pass
 
-
         return self.renderpackettemplate('productdetail.html', {'product': product, \
                                                                 'prepproduct': self.prepproduct(product), \
                                                                 'r_products': r_products, \
                                                                 'r_type': list(self.recommendationtypes.keys())[1], \
                                                                 'r_string': list(self.recommendationtypes.values())[1]})
 
-
-
-
-    def cart_alg_selection(self,limit):
+    def cart_alg_selection(self, limit):
         "code that decides what algorithm to use in the shopping cart based on the accuracy of the recommendations, returns *limit* recommendations"
 
         ids_in_cart = [x[0] for x in session['shopping_cart']]
@@ -417,7 +402,7 @@ class HUWebshop(object):
                 recs = list(set([product for rec in recs_data if rec[2] >= sample_size_limit for product in rec[1] if
                                  product not in ids_in_cart]))
 
-                recs = prioritze_discount.run(recs,4)
+                recs = prioritze_discount.run(recs, 4)
 
             r_prods = self.convert_to_product_list("select * from products where product_id in %s", (tuple(recs),))
 

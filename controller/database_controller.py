@@ -406,12 +406,12 @@ def get_based_on_categories(categories: list, limit):
             .replace('snacks & snoep', 'snacks en snoep')
             .replace('koffie & thee', 'koffie en thee') for e in categories]
     if len(categories) == 0:
-        return execute_query("select * from products where name is not null order by random() limit %s", (limit,))
+        return execute_query("select * from products where name is not null limit %s", (limit,))
     elif len(categories) == 1:
         return execute_query(
-            "select * from products where name is not null and lower(category) like lower(%s) order by random() limit %s",
+            "select * from products where name is not null and lower(category) like lower(%s) limit %s",
             (catFiltered[0], limit))
     elif len(categories) == 2:
         return execute_query("select * from products where product_id in %s", (tuple(execute_query(
-            "select product_id from product_categories where lower(sub_category) like lower(%s) order by random() limit %s",
+            "select product_id from product_categories where lower(sub_category) like lower(%s) limit %s",
             (catFiltered[1], limit))),))
