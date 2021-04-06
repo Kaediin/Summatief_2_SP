@@ -46,9 +46,9 @@ def create_table_property_matching(cursor, connection):
                 f"insert into property_matching_recs (product_id,recommendations,weighted_match_rate) values(%s,%s,%s)",
                 (id, recs, weight)
             )
-            if count % 500 == 0:
+            if count % 500 == 0 or count == len(id_list):
                 connection.commit()
-                print(f"{count}/{len(id_list)}")
+                print(f"Recommendations (Property matching): {count}/{len(id_list)}")
 
 def property_matching(product_id, limit, price_data):
     """Look at all relevant product properties to decide the best matching recommendation, returns a list with a list of recs and an average match rate"""
