@@ -25,32 +25,32 @@ def run(cursor, connection):
 
         connection.commit()
 
-    cursor.execute(
-        "select product_id from products"
-    )
-    data = cursor.fetchall()
-
-    price_data = database.execute_query(
-        f"""select pc.product_id , doelgroep , eenheid, factor, gebruik, geschiktvoor, geursoort, huidconditie,huidtype , huidtypegezicht , inhoud , klacht , kleur , leeftijd , serie, soort,soorthaarverzorging , soortmondverzorging , sterkte , type, typehaarkleuring , typetandenborstel , variant,waterproof , pc.category, sub_category, sub_sub_category, brand, gender
-                                                    from product_properties pp
-                                                    inner join product_categories pc on pc.product_id = pp.product_id
-                                                    inner join products on products.product_id = pp.product_id """, "")
-
-    # replacing ' with '' so LIKE in the sql statement doesn't fuck up
-    id_list = [id[0].replace("'", "''") for id in data]
-
-    for count, id in enumerate(id_list):
-        data = (property_matching(id, 4, price_data))
-        recs = data[0]
-        weight = data[1]
-
         cursor.execute(
-            f"insert into property_matching_recs (product_id,recommendations,weighted_match_rate) values(%s,%s,%s)",
-            (id, recs, weight)
+            "select product_id from products"
         )
-        if count % 500 == 0:
-            connection.commit()
-            print(f"{count}/{len(id_list)}")
+        data = cursor.fetchall()
+
+        price_data = database.execute_query(
+            f"""select pc.product_id , doelgroep , eenheid, factor, gebruik, geschiktvoor, geursoort, huidconditie,huidtype , huidtypegezicht , inhoud , klacht , kleur , leeftijd , serie, soort,soorthaarverzorging , soortmondverzorging , sterkte , type, typehaarkleuring , typetandenborstel , variant,waterproof , pc.category, sub_category, sub_sub_category, brand, gender
+                                                        from product_properties pp
+                                                        inner join product_categories pc on pc.product_id = pp.product_id
+                                                        inner join products on products.product_id = pp.product_id """, "")
+
+        # replacing ' with '' so LIKE in the sql statement doesn't fuck up
+        id_list = [id[0].replace("'", "''") for id in data]
+
+        for count, id in enumerate(id_list):
+            data = (property_matching(id, 4, price_data))
+            recs = data[0]
+            weight = data[1]
+
+            cursor.execute(
+                f"insert into property_matching_recs (product_id,recommendations,weighted_match_rate) values(%s,%s,%s)",
+                (id, recs, weight)
+            )
+            if count % 500 == 0:
+                connection.commit()
+                print(f"{count}/{len(id_list)}")
 
 def property_matching(product_id, limit, price_data):
     # column numbers have been divided in different weight classes, product properties have different weight in deciding what to recommend

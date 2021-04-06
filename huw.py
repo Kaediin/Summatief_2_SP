@@ -7,7 +7,7 @@ import pprint
 from controller import database_controller as database
 from controller import db_auth
 from model import convert_to_model
-from algorithms import profiles, prioritze_discount
+from algorithms import profiles, prioritze_discount,property_matching
 
 # The secret key used for session encryption is randomly generated every time
 # the server is started up. This means all session data (including the 
@@ -357,6 +357,25 @@ class HUWebshop(object):
                                                            'r_type': list(self.recommendationtypes.keys())[0],
                                                            'r_string': list(self.recommendationtypes.values())[0]
                                                            })
+    def product_detail_alg_selection(self,product):
+        "code that decides what algorithm to use in the product_details based on the accuracy of the recommendations"
+
+
+        recs_data = database.execute_query(
+            f"select recommendations, weighted_match_rate from property_matching_recs where product_id = '{product.product_id}'",
+            "")
+
+        print(recs_data)
+        if (recs_data[0][1] > 50):
+            print('property_matching')
+            recs = (recs_data[0][0])
+            r_products = self.convert_to_product_list("select * from products where product_id in %s", (tuple(recs),))
+
+        else:
+            print('simple')
+            r_products = self.recommendations_simple(product.product_id)
+
+        return r_products
 
     def productdetail(self, productid):
         """ This function renders the product detail page based on the product
@@ -364,14 +383,17 @@ class HUWebshop(object):
         try:
             product = convert_to_model.toProduct(
                 database.retrieve_properties("products", {"product_id": str(productid)})[0])
+
+            r_products = self.product_detail_alg_selection(product)
+
         except:
             # TODO: 404 page?
             pass
 
+
         return self.renderpackettemplate('productdetail.html', {'product': product, \
                                                                 'prepproduct': self.prepproduct(product), \
-                                                                'r_products': self.recommendations_simple(
-                                                                    product.product_id), \
+                                                                'r_products': r_products, \
                                                                 'r_type': list(self.recommendationtypes.keys())[1], \
                                                                 'r_string': list(self.recommendationtypes.values())[1]})
 
