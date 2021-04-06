@@ -7,7 +7,7 @@ import pprint
 from controller import database_controller as database
 from controller import db_auth
 from model import convert_to_model
-from algorithms import profiles
+from algorithms import profiles, prioritze_discount,property_matching
 
 # The secret key used for session encryption is randomly generated every time
 # the server is started up. This means all session data (including the 
@@ -357,6 +357,25 @@ class HUWebshop(object):
                                                            'r_type': list(self.recommendationtypes.keys())[0],
                                                            'r_string': list(self.recommendationtypes.values())[0]
                                                            })
+    def product_detail_alg_selection(self,product):
+        "code that decides what algorithm to use in the product_details based on the accuracy of the recommendations"
+
+
+        recs_data = database.execute_query(
+            f"select recommendations, weighted_match_rate from property_matching_recs where product_id = '{product.product_id}'",
+            "")
+
+        print(recs_data)
+        if (recs_data[0][1] > 50):
+            print('property_matching')
+            recs = (recs_data[0][0])
+            r_products = self.convert_to_product_list("select * from products where product_id in %s", (tuple(recs),))
+
+        else:
+            print('simple')
+            r_products = self.recommendations_simple(product.product_id)
+
+        return r_products
 
     def productdetail(self, productid):
         """ This function renders the product detail page based on the product
@@ -364,30 +383,25 @@ class HUWebshop(object):
         try:
             product = convert_to_model.toProduct(
                 database.retrieve_properties("products", {"product_id": str(productid)})[0])
+
+            r_products = self.product_detail_alg_selection(product)
+
         except:
             # TODO: 404 page?
             pass
 
+
         return self.renderpackettemplate('productdetail.html', {'product': product, \
                                                                 'prepproduct': self.prepproduct(product), \
-                                                                'r_products': self.recommendations_simple(
-                                                                    product.product_id), \
+                                                                'r_products': r_products, \
                                                                 'r_type': list(self.recommendationtypes.keys())[1], \
                                                                 'r_string': list(self.recommendationtypes.values())[1]})
 
 
 
-    def shoppingcart(self):
-        """ This function renders the shopping cart for the user."""
 
-        i = []
-        limit = 4
-        for tup in session['shopping_cart']:
-            prod_obj = convert_to_model.toProduct(
-                database.retrieve_properties("products", {"product_id": f"{tup[0]}"})[0])
-            product = self.prepproduct(prod_obj)
-            product["itemcount"] = tup[1]
-            i.append(product)
+    def cart_alg_selection(self,limit):
+        "code that decides what algorithm to use in the shopping cart based on the accuracy of the recommendations, returns *limit* recommendations"
 
         ids_in_cart = [x[0] for x in session['shopping_cart']]
 
@@ -413,9 +427,9 @@ class HUWebshop(object):
                 recs = list(set([product for rec in recs_data if rec[2] >= sample_size_limit for product in rec[1] if
                                  product not in ids_in_cart]))
 
-                recs = self.prioritize_discount(recs,4)
+                recs = prioritze_discount.run(recs,4)
 
-            r_prods = self.convert_to_product_list("select * from products where product_id in %s",(tuple(recs),))
+            r_prods = self.convert_to_product_list("select * from products where product_id in %s", (tuple(recs),))
 
         else:
             try:
@@ -427,6 +441,21 @@ class HUWebshop(object):
             except Exception:
                 r_prods = [convert_to_model.toProduct(e) for e in database.getRandomProducts([], limit)]
 
+        return r_prods
+
+    def shoppingcart(self):
+        """ This function renders the shopping cart for the user."""
+
+        i = []
+        limit = 4
+        for tup in session['shopping_cart']:
+            prod_obj = convert_to_model.toProduct(
+                database.retrieve_properties("products", {"product_id": f"{tup[0]}"})[0])
+            product = self.prepproduct(prod_obj)
+            product["itemcount"] = tup[1]
+            i.append(product)
+
+        r_prods = self.cart_alg_selection(4)
 
         return self.renderpackettemplate('shoppingcart.html', {'itemsincart': i, \
                                                                'r_products': r_prods, \
