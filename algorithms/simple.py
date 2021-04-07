@@ -1,8 +1,20 @@
 import psycopg2
 import random
+import controller.database_controller as database
+from model import convert_to_model
 
+def get_recommendations(product_id):
+    """
+              Get the recommended items from the database given a product ID
+          """
+    product_id = product_id.replace("'", "''")
+    results = database.execute_query("select recommendations from simplerecs where product_id = %s", (product_id,))
+    recs = [convert_to_model.toProduct(
+        database.execute_query("select * from products where product_id = %s", (e,))[0]) for e in
+        results[0][0]]
+    return recs
 
-def run(cursor, connection):
+def fill_database(cursor, connection):
     """
         Drop, then create, the table 'simplerecs', and then fill that table with product ID's and recommended items
     """

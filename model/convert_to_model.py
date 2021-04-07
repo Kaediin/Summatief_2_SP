@@ -25,3 +25,9 @@ def toProduct(tupl):
         )
 
         return prod
+
+
+def convert_to_product_list(query, data):
+    r_prods = [toProduct(e) for e in
+               (database.execute_query(query, data))]
+    return r_prods
