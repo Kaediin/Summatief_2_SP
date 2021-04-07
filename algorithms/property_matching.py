@@ -54,7 +54,7 @@ def property_matching(product_id, limit, price_data):
                                                                inner join products on products.product_id = pp.product_id
                                                                where pc.product_id like '{product_id}'""",
             "")[0]
-    except:
+    except IndexError:
         return [None,0]
 
     if(product_id_properties.count(None)==27):
