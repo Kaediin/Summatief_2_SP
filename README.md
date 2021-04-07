@@ -74,7 +74,7 @@ You may run the flask project by clicking on the green play button on the top-ri
 
 
 This will (if done correctly) create all the database tables you will need and startup the application. 
-We now need to fill the database which can be done in using 2 different methods, 1 being quick and easy but loading will take long (through Python), and 1 being very quick to install but may be more complicated (Through database). For the latter please scroll down to the secion `Filling database through PgAdmin or DBeaver`
+We now need to fill the database which can be done in using 2 different methods, 1 being quick and easy but loading will take long (through Python), and 1 being very quick to install but may be more complicated (Through database). For the latter please scroll down to the secion `Filling database through or DBeaver`
 
 ## Filling database through python
 Navigate to the file `database controller` and uncomment all the lines in the function `instantiate`. It should look something like:
@@ -104,7 +104,7 @@ def instantiate(products, sessions, visitors):
 ````
 If you now Run the Flask App again is will slowly but surely fill the database with all the necessary data.
 
-## Filling database through PgAdmin or DBeaver
+## Filling database through DBeaver
 Download the CSV from this link: https://wetransfer.com/downloads/2c0cfdffa74cb21d9dce4f090965462520210407080434/642865
 Extract the files to a folder of your choosing.
 
