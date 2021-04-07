@@ -1,11 +1,14 @@
-def recommend(cart, cursor, limit=4):
+import controller.database_controller as database
+
+
+def recommend(cart, limit=4):
     """
         Generate recommendations for items in a shopping cart, based on the similarities between the cart and other orders
     """
 
     # Get all of the products in all of the orders
-    cursor.execute("select products from orders where cardinality(products) > 1")
-    products = [set(e[0]) for e in cursor.fetchall()]
+    res = database.execute_query("select products from orders where cardinality(products) > 1", ())
+    products = [set(e[0]) for e in res]
 
     # Sort the list of orders by how similar they are to the cart, and by how much the cart makes up of that order,
     # while simultaneously changing all orders to contain only products not found in the shopping cart

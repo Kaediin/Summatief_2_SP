@@ -7,7 +7,7 @@ import pprint
 from controller import database_controller as database
 from controller import db_auth
 from model import convert_to_model
-from algorithms import profiles, prioritze_discount, property_matching, homepage
+from algorithms import profiles, prioritze_discount, property_matching, behaviour, homepage
 
 # The secret key used for session encryption is randomly generated every time
 # the server is started up. This means all session data (including the 
@@ -379,19 +379,23 @@ class HUWebshop(object):
             recs_data_simple = database.execute_query(
                 f"select * from simplerecs where product_id in {tuple(ids_in_cart)}",
                 "")
+            recs_data_behaviour = behaviour.recommend(ids_in_cart, limit)
 
             sample_size_limit = 10
-            if recs_data[0][2] < sample_size_limit:
-                print('simple')
-                recs = list(set([z for x in recs_data_simple for z in random.sample(x[1], k=len(x[1]))]))[:limit]
-
-            else:
+            if recs_data[0][2] >= sample_size_limit:
                 print('bought_together')
 
                 recs = list(set([product for rec in recs_data if rec[2] >= sample_size_limit for product in rec[1] if
                                  product not in ids_in_cart]))
 
                 recs = prioritze_discount.prioritize_discount(recs, 4)
+            else:
+                if len(recs_data_behaviour) == limit:
+                    print('behaviour')
+                    recs = recs_data_behaviour
+                else:
+                    print('simple')
+                    recs = list(set([z for x in recs_data_simple for z in random.sample(x[1], k=len(x[1]))]))[:limit]
 
             r_prods = self.convert_to_product_list("select * from products where product_id in %s", (tuple(recs),))
 

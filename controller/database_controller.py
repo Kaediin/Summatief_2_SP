@@ -19,7 +19,7 @@ def instantiate(products, sessions, visitors):
     # print('Database producten zijn gevuld!')
     #
     print('Relaties worden toegekend')
-    assign_relations()
+    # assign_relations()
     print('Relaties zijn toegekend!')
     #
     # # print('Recommendations worden gemaakt..')
