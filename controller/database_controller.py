@@ -15,11 +15,11 @@ def instantiate(products, sessions, visitors):
     # fill_db(products, sessions, visitors)
     # print('Database producten zijn gevuld!')
     #
-    # print('Relaties worden toegekend')
-    # assign_relations()
-    # print('Relaties zijn toegekend!')
+    print('Relaties worden toegekend')
+    assign_relations()
+    print('Relaties zijn toegekend!')
     #
-    # print('Recommendations worden gemaakt..')
+    # # print('Recommendations worden gemaakt..')
     # cursor, connection = open_db_connection()
     # property_matching.create_table_property_matching(cursor, connection)
     # most_bought_together_algorithm.create_table_most_bought_together(cursor, connection)

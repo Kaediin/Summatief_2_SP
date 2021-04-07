@@ -8,12 +8,10 @@ def run(cursor, connection):
     """
 
     # Check if the table needs to be filled or not
-    try:
-        cursor.execute("select count(*) from simplerecs")
-        hasEntries = True if cursor.fetchone()[0] > 0 else False
-    except:
-        connection.rollback()
-        hasEntries = False
+
+    cursor.execute("select count(*) from simplerecs")
+    hasEntries = True if cursor.fetchone()[0] > 0 else False
+
 
     if not hasEntries:
         # Create the table 'simplerecs'

@@ -4,24 +4,13 @@ import controller.database_controller as database
 def create_table_property_matching(cursor, connection):
     """create and fill a table based on the property_matching() function"""
 
-    try:
-        cursor.execute("select count(*) from property_matching_recs")
-        hasEntries = True if cursor.fetchone()[0] > 0 else False
-    except:
-        connection.rollback()
-        hasEntries = False
+
+    cursor.execute("select count(*) from property_matching_recs")
+    hasEntries = True if cursor.fetchone()[0] > 0 else False
+
 
     if not hasEntries:
-        # create table
 
-        try:
-            cursor.execute(
-                f"create table property_matching_recs (product_id varchar primary key, recommendations varchar[], weighted_match_rate float)"
-            )
-        except:
-            connection.rollback()
-
-        connection.commit()
 
         cursor.execute(
             "select product_id from products"
