@@ -1,27 +1,16 @@
 import controller.database_controller as database
 
 
-def create_table_property_matching(cursor, connection):
+def fill_table_property_matching(cursor, connection):
     """create and fill a table based on the property_matching() function"""
 
-    try:
-        cursor.execute("select count(*) from property_matching_recs")
-        hasEntries = True if cursor.fetchone()[0] > 0 else False
-    except:
-        connection.rollback()
-        hasEntries = False
+
+    cursor.execute("select count(*) from property_matching_recs")
+    hasEntries = True if cursor.fetchone()[0] > 0 else False
+
 
     if not hasEntries:
-        # create table
 
-        try:
-            cursor.execute(
-                f"create table property_matching_recs (product_id varchar primary key, recommendations varchar[], weighted_match_rate float)"
-            )
-        except:
-            connection.rollback()
-
-        connection.commit()
 
         cursor.execute(
             "select product_id from products"
@@ -65,7 +54,7 @@ def property_matching(product_id, limit, price_data):
                                                                inner join products on products.product_id = pp.product_id
                                                                where pc.product_id like '{product_id}'""",
             "")[0]
-    except:
+    except IndexError:
         return [None,0]
 
     if(product_id_properties.count(None)==27):

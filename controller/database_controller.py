@@ -6,7 +6,10 @@ from algorithms import most_bought_together_algorithm, simple, profiles, propert
 from psycopg2 import sql
 
 
+
+
 def instantiate(products, sessions, visitors):
+
     print('Database tables aan het aanmaken')
     create_tables()
     print('Database tables zijn aangemaakt!')
@@ -15,14 +18,14 @@ def instantiate(products, sessions, visitors):
     # fill_db(products, sessions, visitors)
     # print('Database producten zijn gevuld!')
     #
-    # print('Relaties worden toegekend')
-    # assign_relations()
-    # print('Relaties zijn toegekend!')
+    print('Relaties worden toegekend')
+    assign_relations()
+    print('Relaties zijn toegekend!')
     #
-    # print('Recommendations worden gemaakt..')
+    # # print('Recommendations worden gemaakt..')
     # cursor, connection = open_db_connection()
-    # property_matching.create_table_property_matching(cursor, connection)
-    # most_bought_together_algorithm.create_table_most_bought_together(cursor, connection)
+    # property_matching.fill_table_property_matching(cursor, connection)
+    # most_bought_together_algorithm.fill_table_most_bought_together(cursor, connection)
     # simple.run(cursor, connection)
     # close_db_connection(cursor, connection)
     #

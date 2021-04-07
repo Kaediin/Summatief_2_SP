@@ -8,12 +8,10 @@ def run(cursor, connection):
     """
 
     # Check if the table needs to be filled or not
-    try:
-        cursor.execute("select count(*) from simplerecs")
-        hasEntries = True if cursor.fetchone()[0] > 0 else False
-    except:
-        connection.rollback()
-        hasEntries = False
+
+    cursor.execute("select count(*) from simplerecs")
+    hasEntries = True if cursor.fetchone()[0] > 0 else False
+
 
     if not hasEntries:
         # Create the table 'simplerecs'
@@ -51,7 +49,7 @@ def recommend(product_id, cursor, limit=4):
                     """)
     cat, subcat, subsubcat = [e.replace("'", "''") if e is not None else e for e in cursor.fetchall()[0]]
 
-    # Get all product ID's with the same sub_sub_category, sub_category ca
+    # Get all product ID's with the same sub_sub_category, sub_category and category in that order
     cursor.execute(f""" 
                         select t.product_id from (
                             select *, 1 as filter from product_categories pc
