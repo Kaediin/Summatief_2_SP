@@ -1,7 +1,7 @@
 import controller.database_controller as database
 
 
-def create_table_property_matching(cursor, connection):
+def fill_table_property_matching(cursor, connection):
     """create and fill a table based on the property_matching() function"""
 
 

@@ -1,6 +1,6 @@
 import operator
 
-def create_table_most_bought_together(cursor, connection, rec_limit=4):
+def fill_table_most_bought_together(cursor, connection, rec_limit=4):
     """creates a table with recommendations based on what products were bought most often with other prodcuts, and a score based on how often that happened on average"""
 
     cursor.execute("select count(*) from order_based_recs")
