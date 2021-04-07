@@ -1,9 +1,9 @@
 import controller.database_controller as database
-import itertools, random
+import itertools, psycopg2
 from algorithms import prioritze_discount
 
 
-def get_recs(visitor_id, limit):
+def get_recs(visitor_id, limit, only_ids=False):
     """ get recommendations based on visitor id """
 
     # get related products to a profile """
@@ -46,10 +46,10 @@ def get_recs(visitor_id, limit):
                 (most_popular_category,))
             popular_category_product_ids = prioritze_discount.prioritize_discount(
                 list(itertools.chain.from_iterable(popular_category_product_ids)), limit)
-            products_results = database.execute_query("select * from products where product_id in %s",
+            select_criteria = '*' if only_ids is False else 'product_id'
+            products_results = database.execute_query(f"select {select_criteria} from products where product_id in %s",
                                                       (tuple(popular_category_product_ids),))
             return products_results
-        except Exception as e:
-            print(e.args)
+        except psycopg2.errors.SyntaxError:
             break
     return products
