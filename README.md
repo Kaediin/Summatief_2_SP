@@ -160,7 +160,11 @@ Click `next`.
 
 ![image](https://user-images.githubusercontent.com/42800737/113854432-2a49b580-979f-11eb-9b49-6abd631bb3e9.png)
 
-You may now click start and Dbeaver will Import the data into your database
+You may now click start and Dbeaver will Import the data into your database.
+
+
+
+#### You can now run the webshop!
 
 
 
