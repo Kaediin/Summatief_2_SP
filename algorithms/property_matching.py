@@ -1,29 +1,16 @@
 import controller.database_controller as database
-import controller
 
 
-def run(cursor, connection):
-    """Look at all relevant product properties to decide the best matching recommendation, returns a list with a list of recs and an average match rate"""
+def fill_table_property_matching(cursor, connection):
+    """create and fill a table based on the property_matching() function"""
 
-    try:
-        cursor.execute("select count(*) from property_matching_recs")
-        hasEntries = True if cursor.fetchone()[0] > 0 else False
-    except:
-        connection.rollback()
-        hasEntries = False
+
+    cursor.execute("select count(*) from property_matching_recs")
+    hasEntries = True if cursor.fetchone()[0] > 0 else False
+
 
     if not hasEntries:
-        # create table
-        # we track the average of how many times the most bought together items were in the same order as item x, we do this so we have an indication of the accuracy of the recommendation:
-        # avg_x_shared_orders = 3 -> weak correlation, avg_x_shared_orders = 200 -> very strong correlation.
-        try:
-            cursor.execute(
-                f"create table property_matching_recs (product_id varchar primary key, recommendations varchar[], weighted_match_rate float)"
-            )
-        except:
-            connection.rollback()
 
-        connection.commit()
 
         cursor.execute(
             "select product_id from products"
@@ -36,7 +23,7 @@ def run(cursor, connection):
                                                         inner join product_categories pc on pc.product_id = pp.product_id
                                                         inner join products on products.product_id = pp.product_id """, "")
 
-        # replacing ' with '' so LIKE in the sql statement doesn't fuck up
+        # replacing ' with '' so LIKE in the sql statement doesn't crash
         id_list = [id[0].replace("'", "''") for id in data]
 
         for count, id in enumerate(id_list):
@@ -48,11 +35,13 @@ def run(cursor, connection):
                 f"insert into property_matching_recs (product_id,recommendations,weighted_match_rate) values(%s,%s,%s)",
                 (id, recs, weight)
             )
-            if count % 500 == 0:
+            if count % 500 == 0 or count == len(id_list):
                 connection.commit()
-                print(f"{count}/{len(id_list)}")
+                print(f"Recommendations (Property matching): {count}/{len(id_list)}")
 
 def property_matching(product_id, limit, price_data):
+    """Look at all relevant product properties to decide the best matching recommendation, returns a list with a list of recs and an average match rate"""
+
     # column numbers have been divided in different weight classes, product properties have different weight in deciding what to recommend
     w2 = [3, 4, 7, 8, 9, 12, 13, 15, 16, 17, 18, 19, 20, 22, 24, 25, 27]
     w5 = [5, 11, 21, 23, 26, 28]
@@ -65,7 +54,7 @@ def property_matching(product_id, limit, price_data):
                                                                inner join products on products.product_id = pp.product_id
                                                                where pc.product_id like '{product_id}'""",
             "")[0]
-    except:
+    except IndexError:
         return [None,0]
 
     if(product_id_properties.count(None)==27):

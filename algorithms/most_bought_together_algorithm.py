@@ -1,38 +1,20 @@
 import operator
 
-import psycopg2
+def fill_table_most_bought_together(cursor, connection, rec_limit=4):
+    """creates a table with recommendations based on what products were bought most often with other prodcuts, and a score based on how often that happened on average"""
 
-import controller.db_auth
-import controller.db_auth
+    cursor.execute("select count(*) from order_based_recs")
+    hasEntries = True if cursor.fetchone()[0] > 0 else False
 
-
-def run(cursor, connection, rec_limit=4):
-    try:
-        cursor.execute("select count(*) from order_based_recs")
-        hasEntries = True if cursor.fetchone()[0] > 0 else False
-    except:
-        connection.rollback()
-        hasEntries = False
 
     if not hasEntries:
-        # create table
-        # we track the average of how many times the most bought together items were in the same order as item x, we do this so we have an indication of the accuracy of the recommendation:
-        # avg_x_shared_orders = 3 -> weak correlation, avg_x_shared_orders = 200 -> very strong correlation.
-        try:
-            cursor.execute(
-                f"create table order_based_recs (product_id varchar primary key, recommendations varchar[], avg_x_shared_orders int)"
-            )
-        except:
-            connection.rollback()
-
-        connection.commit()
 
         cursor.execute(
             "select product_id from products"
         )
         data = cursor.fetchall()
 
-        # replacing ' with '' so LIKE in the sql statement doesn't fuck up
+        # replacing ' with '' so LIKE in the sql statement doesn't crash
         id_list = [id[0].replace("'", "''") for id in data]
 
         q = f"""select products
@@ -64,10 +46,9 @@ def run(cursor, connection, rec_limit=4):
 
             recs = [rec[0] for rec in sorted_results][:rec_limit]
 
-            try:
-                count_list = [sorted_results[x][1] for x in range(len(recs))]
-            except:
-                pass
+
+            count_list = [sorted_results[x][1] for x in range(len(recs))]
+
 
             if len(recs) != 0:
                 avg = round(sum(count_list) / len(recs), 2)
