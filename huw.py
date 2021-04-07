@@ -1,13 +1,11 @@
-from flask import Flask, request, session, render_template, redirect, url_for, g
-import random, os, json, urllib.parse, requests
+from flask import Flask, request, session, render_template
+import os, urllib.parse
 from pymongo import MongoClient
 from dotenv import load_dotenv
-from bson.objectid import ObjectId
-import pprint
 from controller import database_controller as database
 from controller import db_auth
 from model import convert_to_model
-from algorithms import profiles, prioritze_discount, property_matching, behaviour, homepage
+from page_logic import page_home, page_cart, page_details
 
 # The secret key used for session encryption is randomly generated every time
 # the server is started up. This means all session data (including the 
@@ -251,38 +249,6 @@ class HUWebshop(object):
         packet['shopping_cart_count'] = self.shoppingcartcount()
         return render_template(template, packet=packet)
 
-    """ ..:: Recommendation Functions ::.. """
-
-    def convert_to_product_list(self, query, data):
-
-        r_prods = [convert_to_model.toProduct(e) for e in
-                   (database.execute_query(query, data))]
-
-        return r_prods
-
-    def recommendations_relevant_combination(self, p_id):
-        try:
-            return [convert_to_model.toProduct(
-                database.execute_query("select * from products where product_id = %s", (e,))[0]) for e
-                in
-                database.execute_query("select * from order_based_recs where product_id = %s", (str(p_id),))[0][1]]
-        except Exception:
-            pass
-
-    def recommendations_simple(self, p_id):
-        """
-            Get the recommended items from the database given a product ID
-        """
-        product_id = p_id.replace("'", "''")
-        results = database.execute_query("select recommendations from simplerecs where product_id = %s", (product_id,))
-        recs = [convert_to_model.toProduct(
-            database.execute_query("select * from products where product_id = %s", (e,))[0]) for e in
-            results[0][0]]
-        return recs
-
-    def recommendations_seasonal(self, date, limit=4):
-        pass
-
     """ ..:: Full Page Endpoints ::.. """
 
     def productpage(self, cat1=None, cat2=None, cat3=None, cat4=None, page=1):
@@ -297,13 +263,13 @@ class HUWebshop(object):
 
         """ Get all products (this need to be based on profile if has profile id) """
         profile_id = session['profile_id'] if session['profile_id'] is not None else '5a393d68ed295900010384ca'
-        retrieved_ids = homepage.get_recommendations(profile_id, nononescats, limit)
+        retrieved_ids = page_home.get_recommendations(profile_id, nononescats, limit)
 
         """ Convert the recommended ids to product objects """
         prodList = [convert_to_model.toProduct(e) for e in retrieved_ids[skipindex:(skipindex + limit)]]
 
         """ Get 'anderen kochten ook' recommendations """
-        recs = homepage.get_anderen_kochten_ook(prodList, rec_limit)
+        recs = page_home.get_anderen_kochten_ook(prodList, rec_limit)
 
         """ Set the url path to match the categries and page we are in """
         if len(nononescats) > 0:
@@ -327,36 +293,19 @@ class HUWebshop(object):
                                                            'r_string': list(self.recommendationtypes.values())[0]
                                                            })
 
-    def product_detail_alg_selection(self, product):
-        "code that decides what algorithm to use in the product_details based on the accuracy of the recommendations"
-
-        recs_data = database.execute_query(
-            f"select recommendations, weighted_match_rate from property_matching_recs where product_id = '{product.product_id}'",
-            "")
-
-        if (recs_data[0][1] > 50):
-            print('property_matching')
-            recs = (recs_data[0][0])
-            r_products = self.convert_to_product_list("select * from products where product_id in %s", (tuple(recs),))
-
-        else:
-            print('simple')
-            r_products = self.recommendations_simple(product.product_id)
-
-        return r_products
-
     def productdetail(self, productid):
         """ This function renders the product detail page based on the product
         id provided. """
+
         try:
             product = convert_to_model.toProduct(
                 database.retrieve_properties("products", {"product_id": str(productid)})[0])
 
-            r_products = self.product_detail_alg_selection(product)
+            r_products = page_details.product_detail_alg_selection(product)
 
-        except:
-            # TODO: 404 page?
-            pass
+        except IndexError:
+            print('No product found, returning back to productpage')
+            return self.productpage()
 
         return self.renderpackettemplate('productdetail.html', {'product': product, \
                                                                 'prepproduct': self.prepproduct(product), \
@@ -364,67 +313,26 @@ class HUWebshop(object):
                                                                 'r_type': list(self.recommendationtypes.keys())[1], \
                                                                 'r_string': list(self.recommendationtypes.values())[1]})
 
-    def cart_alg_selection(self, limit):
-        "code that decides what algorithm to use in the shopping cart based on the accuracy of the recommendations, returns *limit* recommendations"
-
-        ids_in_cart = [x[0] for x in session['shopping_cart']]
-
-        if len(ids_in_cart) == 1:
-            ids_in_cart.append('')
-        if len(ids_in_cart) > 0:
-            recs_data = database.execute_query(
-                f"select * from order_based_recs where product_id in {tuple(ids_in_cart)}",
-                "")
-            recs_data = list(reversed(sorted(recs_data, key=lambda x: x[2])))[:limit]
-            recs_data_simple = database.execute_query(
-                f"select * from simplerecs where product_id in {tuple(ids_in_cart)}",
-                "")
-            recs_data_behaviour = behaviour.recommend(ids_in_cart, limit)
-
-            sample_size_limit = 10
-            if recs_data[0][2] >= sample_size_limit:
-                print('bought_together')
-
-                recs = list(set([product for rec in recs_data if rec[2] >= sample_size_limit for product in rec[1] if
-                                 product not in ids_in_cart]))
-
-                recs = prioritze_discount.prioritize_discount(recs, 4)
-            else:
-                if len(recs_data_behaviour) == limit:
-                    print('behaviour')
-                    recs = recs_data_behaviour
-                else:
-                    print('simple')
-                    recs = list(set([z for x in recs_data_simple for z in random.sample(x[1], k=len(x[1]))]))[:limit]
-
-            r_prods = self.convert_to_product_list("select * from products where product_id in %s", (tuple(recs),))
-
-        else:
-            try:
-                profile_id = session['profile_id'] if session[
-                                                          'profile_id'] is not None else '5a393d68ed295900010384ca'
-                if profile_id is None:
-                    raise Exception
-                r_prods = homepage.get_profile_recommendations(profile_id, limit=limit)
-            except Exception:
-                r_prods = [convert_to_model.toProduct(e) for e in database.get_based_on_categories([], limit)]
-
-        return r_prods
-
     def shoppingcart(self):
         """ This function renders the shopping cart for the user."""
 
+        # Set vars, get profile_id and het shopping cart items
         i = []
         limit = 4
-        for tup in session['shopping_cart']:
+        profile_id = session['profile_id'] if session['profile_id'] is not None else '5a393d68ed295900010384ca'
+        shopping_cart = session['shopping_cart']
+
+        # Convert de items naar onze Product objecten en tel de kwantiteit
+        for tup in shopping_cart:
             prod_obj = convert_to_model.toProduct(
                 database.retrieve_properties("products", {"product_id": f"{tup[0]}"})[0])
             product = self.prepproduct(prod_obj)
             product["itemcount"] = tup[1]
             i.append(product)
 
-        r_prods = [convert_to_model.toProduct(e) if type(e) == tuple else e for e in self.cart_alg_selection(4)]
-        print(r_prods)
+        # Haal de recommended producten op
+        r_prods = [convert_to_model.toProduct(e) if type(e) == tuple else e for e in
+                   page_cart.cart_alg_selection(limit, shopping_cart, profile_id)]
 
         return self.renderpackettemplate('shoppingcart.html', {'itemsincart': i, \
                                                                'r_products': r_prods, \
