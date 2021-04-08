@@ -1,15 +1,15 @@
 import psycopg2
-import controller.db_auth
-from model.product_properties import ProductProperties
-from controller.database_predefined_values import tables
-from algorithms import most_bought_together_algorithm, simple, profiles, property_matching
 from psycopg2 import sql
 
-
+import controller.db_auth
+from controller.database_predefined_values import tables
+from model.product_properties import ProductProperties
 
 
 def instantiate(products, sessions, visitors):
-
+    """ Here we create the database structure
+        Uncomment the rest if you wish to fill the database through python (not recommended)
+    """
     print('Database tables aan het aanmaken')
     create_tables()
     print('Database tables zijn aangemaakt!')
