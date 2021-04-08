@@ -292,7 +292,8 @@ class HUWebshop(object):
                                                                retrieved_ids)) else False,
                                                            'r_products': recs[:rec_limit],
                                                            'r_type': list(self.recommendationtypes.keys())[0],
-                                                           'r_string': list(self.recommendationtypes.values())[0]
+                                                           'r_string': list(self.recommendationtypes.values())[0],
+                                                           'header_text': 'Voor u aanbevolen' if len(nononescats) == 0 else ''
                                                            })
 
     def productdetail(self, productid):
