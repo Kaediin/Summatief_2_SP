@@ -24,6 +24,7 @@ def cart_alg_selection(limit, shopping_cart, profile_id):
             f"select * from simplerecs where product_id in {tuple(ids_in_cart)}",
             "")
         recs_data_behaviour = behaviour.recommend(ids_in_cart, limit)
+        print(f'{ids_in_cart}, {recs_data_behaviour}')
 
         sample_size_limit = 10
         if recs_data[0][2] >= sample_size_limit:
@@ -32,7 +33,7 @@ def cart_alg_selection(limit, shopping_cart, profile_id):
             recs = list(set([product for rec in recs_data if rec[2] >= sample_size_limit for product in rec[1] if
                              product not in ids_in_cart]))
 
-            recs = prioritze_discount.prioritize_discount(recs, 4)
+            recs = prioritze_discount.prioritize_discount(recs, limit)
         else:
             if len(recs_data_behaviour) == limit:
                 print('Algorithm: Behaviour')

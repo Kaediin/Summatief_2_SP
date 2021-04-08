@@ -265,11 +265,13 @@ class HUWebshop(object):
         profile_id = session['profile_id'] if session['profile_id'] is not None else '5a393d68ed295900010384ca'
         retrieved_ids = page_home.get_recommendations(profile_id, nononescats, limit)
 
+        id_batch = retrieved_ids[skipindex:(skipindex + limit)]
+
         """ Convert the recommended ids to product objects """
-        prodList = [convert_to_model.toProduct(e) for e in retrieved_ids[skipindex:(skipindex + limit)]]
+        prodList = [convert_to_model.toProduct(e) for e in id_batch]
 
         """ Get 'anderen kochten ook' recommendations """
-        recs = page_home.get_anderen_kochten_ook(prodList, rec_limit)
+        recs = page_home.get_anderen_kochten_ook(id_batch, rec_limit, profile_id)
 
         """ Set the url path to match the categries and page we are in """
         if len(nononescats) > 0:

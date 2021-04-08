@@ -1,5 +1,6 @@
 import controller.database_controller as database
 from algorithms import profiles, simple
+from page_logic import page_cart
 
 
 def get_recommendations(profile_id, categories, min_amount, max_amount=34004):
@@ -28,11 +29,6 @@ def get_recommendations_on_categories_or_random(categories, limit):
     return [e for e in database.get_based_on_categories(categories, limit)]
 
 
-def get_anderen_kochten_ook(comparison_products, rec_limit):
-    """ get simple recommendations from products """
-    recs = []
-    for product in comparison_products:
-        simple_recs = simple.get_recommendations(product.product_id)
-        [recs.append(e) for e in simple_recs if len(recs) != rec_limit]
-        if len(recs) == rec_limit:
-            return recs
+def get_anderen_kochten_ook(comparison_products, rec_limit, profile_id):
+    """ get simple recommendations from products if the 'most_bought_together' and 'behaviour' algorithms do not suffice"""
+    return page_cart.cart_alg_selection(rec_limit, comparison_products, profile_id)
