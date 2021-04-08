@@ -16,6 +16,9 @@ def recommend(cart, limit=4):
     products = sorted([e - cart for e in sorted(products, key=lambda e: len(cart & e))[::-1] if len(e - cart) > 0 and len(e & cart) >= 1], key=len)
     result = []
 
+    # Get all legitimate IDs, to check whether the IDs in the orders are legit
+    ids = [e[0] for e in database.execute_query("select product_id from products")]
+
     # Fill the result with items from the changed products list, until the result contains a maximum number of items
     # equal to the given limit
     while len(result) < limit:
@@ -25,7 +28,7 @@ def recommend(cart, limit=4):
         order = products.pop(0)
 
         for p in order:
-            if p not in result:
+            if p not in result and p in ids:
                 result.append(p)
                 if len(result) >= limit:
                     break
