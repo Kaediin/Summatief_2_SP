@@ -17,7 +17,7 @@ def recommend(cart, limit=4):
     result = []
 
     # Get all legitimate IDs, to check whether the IDs in the orders are legit
-    ids = [e[0] for e in database.execute_query("select product_id from products")]
+    ids = [e[0] for e in database.execute_query("select product_id from products","")]
 
     # Fill the result with items from the changed products list, until the result contains a maximum number of items
     # equal to the given limit

@@ -30,8 +30,7 @@ def cart_alg_selection(limit, shopping_cart, profile_id):
         if recs_data[0][2] >= sample_size_limit:
             print('Algorithm: Bought_together')
 
-            recs = list(set([product for rec in recs_data if rec[2] >= sample_size_limit for product in rec[1] if
-                             product not in ids_in_cart]))
+            recs = list(set([rec for data in recs_data if (data[2]>sample_size_limit) for rec in data[1]]))
 
             recs = prioritze_discount.prioritize_discount(recs, limit)
         else:
@@ -41,6 +40,8 @@ def cart_alg_selection(limit, shopping_cart, profile_id):
             else:
                 print('Algorithm: Simple')
                 recs = list(set([z for x in recs_data_simple for z in random.sample(x[1], k=len(x[1]))]))[:limit]
+
+        print(recs)
 
         r_prods = convert_to_model.convert_to_product_list("select * from products where product_id in %s",
                                                            (tuple(recs),))
