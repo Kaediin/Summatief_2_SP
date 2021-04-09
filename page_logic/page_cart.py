@@ -1,8 +1,9 @@
-import controller.database_controller as database
-from algorithms import behaviour, prioritze_discount
-from page_logic import page_home
-from model import convert_to_model
 import random
+
+import controller.database_controller as database
+from algorithms import behaviour
+from model import convert_to_model, product
+from page_logic import page_home
 
 
 def cart_alg_selection(limit, shopping_cart, profile_id):
@@ -24,7 +25,7 @@ def cart_alg_selection(limit, shopping_cart, profile_id):
             f"select * from simplerecs where product_id in {tuple(ids_in_cart)}",
             "")
         recs_data_behaviour = behaviour.recommend(ids_in_cart, limit)
-        print(f'{ids_in_cart}, {recs_data_behaviour}')
+        # print(f'{ids_in_cart}, {recs_data_behaviour}')
 
         sample_size_limit = 10
         if recs_data[0][2] >= sample_size_limit:
@@ -32,7 +33,9 @@ def cart_alg_selection(limit, shopping_cart, profile_id):
 
             recs = list(set([rec for data in recs_data if (data[2]>sample_size_limit) for rec in data[1]]))
 
-            recs = prioritze_discount.prioritize_discount(recs, limit)
+            # recs = prioritze_discount.prioritize_discount(recs, limit)
+            random.shuffle(recs)
+            recs = recs[:4]
         else:
             if len(recs_data_behaviour) == limit:
                 print('Algorithm: Behaviour')
@@ -42,9 +45,12 @@ def cart_alg_selection(limit, shopping_cart, profile_id):
                 recs = list(set([z for x in recs_data_simple for z in random.sample(x[1], k=len(x[1]))]))[:limit]
 
         print(recs)
-
+        if len(recs) < 4:
+            recs = list(set([z for x in recs_data_simple for z in random.sample(x[1], k=len(x[1]))]))[:limit]
+            print(recs)
         r_prods = convert_to_model.convert_to_product_list("select * from products where product_id in %s",
                                                            (tuple(recs),))
+        r_prods = [convert_to_model.toProduct(e) for e in r_prods if type(e) != product.Product]
 
     else:
         try:
