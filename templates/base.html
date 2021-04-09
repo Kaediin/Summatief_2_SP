@@ -90,7 +90,11 @@
     {% block content %}{{ contenttext }}{% endblock %}
     {% block suggestionbox %}
         {% if packet.r_products %}
-            <h4>{{ packet.r_string }}</h4>
+            {% if packet.header_text_base == 'Aanbevolen voor jou' %}
+                <h4>{{ packet.header_text_base }}</h4>
+            {% else %}
+                <h4>{{ packet.r_string }}</h4>
+            {% endif %}
         {% endif %}
         <div id="recommendedproducts">
             {% for product in packet.r_products %}

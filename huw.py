@@ -258,7 +258,8 @@ class HUWebshop(object):
         """ This function renders the product page template with the products it
         can retrieve from the database, based on the URL path provided (which
         corresponds to product categories). """
-        limit = session['items_per_page'] if session['items_per_page'] != 0 else database.execute_query("select count(product_id) from products", '')[0][0]
+        limit = session['items_per_page'] if session['items_per_page'] != 0 else \
+            database.execute_query("select count(product_id) from products", '')[0][0]
 
         rec_limit = 4
         catlist = [cat1, cat2, cat3, cat4]
@@ -326,7 +327,7 @@ class HUWebshop(object):
         """ This function renders the shopping cart for the user."""
 
         # Set vars, get profile_id and het shopping cart items
-        i = []
+        items_in_cart = []
         limit = 4
         profile_id = session['profile_id'] if session['profile_id'] is not None else '5a393d68ed295900010384ca'
         shopping_cart = session['shopping_cart']
@@ -337,16 +338,18 @@ class HUWebshop(object):
                 database.retrieve_properties("products", {"product_id": f"{tup[0]}"})[0])
             product = self.prepproduct(prod_obj)
             product["itemcount"] = tup[1]
-            i.append(product)
+            items_in_cart.append(product)
 
         # Haal de recommended producten op
         r_prods = [convert_to_model.toProduct(e) if type(e) == tuple else e for e in
                    page_cart.cart_alg_selection(limit, shopping_cart, profile_id)]
 
-        return self.renderpackettemplate('shoppingcart.html', {'itemsincart': i, \
+        return self.renderpackettemplate('shoppingcart.html', {'itemsincart': items_in_cart, \
                                                                'r_products': r_prods, \
                                                                'r_type': list(self.recommendationtypes.keys())[2], \
-                                                               'r_string': list(self.recommendationtypes.values())[2]})
+                                                               'r_string': list(self.recommendationtypes.values())[2],
+                                                               'header_text_base': 'Aanbevolen voor jou' if len(
+                                                                   items_in_cart) == 0 else ''})
 
     def categoryoverview(self):
         """ This subpage shows all top-level categories in its main menu. """
