@@ -2,7 +2,7 @@ import random
 
 import controller.database_controller as database
 from algorithms import behaviour
-from model import convert_to_model, product
+from model import convert_to_model
 from page_logic import page_home
 
 
@@ -50,7 +50,6 @@ def cart_alg_selection(limit, shopping_cart, profile_id):
             print(recs)
         r_prods = convert_to_model.convert_to_product_list("select * from products where product_id in %s",
                                                            (tuple(recs),))
-        r_prods = [convert_to_model.toProduct(e) for e in r_prods if type(e) != product.Product]
 
     else:
         try:

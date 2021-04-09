@@ -1,10 +1,13 @@
-from flask import Flask, request, session, render_template
-import os, urllib.parse
-from pymongo import MongoClient
+import os
+import urllib.parse
+
 from dotenv import load_dotenv
+from flask import Flask, request, session, render_template
+from pymongo import MongoClient
+
 from controller import database_controller as database
 from controller import db_auth
-from model import convert_to_model
+from model import convert_to_model, product
 from page_logic import page_home, page_cart, page_details
 
 # The secret key used for session encryption is randomly generated every time
@@ -255,7 +258,7 @@ class HUWebshop(object):
         """ This function renders the product page template with the products it
         can retrieve from the database, based on the URL path provided (which
         corresponds to product categories). """
-        limit = session['items_per_page']
+        limit = session['items_per_page'] if session['items_per_page'] != 0 else database.execute_query("select count(product_id) from products", '')[0]
         rec_limit = 4
         catlist = [cat1, cat2, cat3, cat4]
         nononescats = [e for e in catlist if e is not None]
@@ -272,6 +275,7 @@ class HUWebshop(object):
 
         """ Get 'anderen kochten ook' recommendations """
         recs = page_home.get_anderen_kochten_ook(id_batch, rec_limit, profile_id)
+        recs = [convert_to_model.toProduct(e) if type(e) != product.Product else e for e in recs]
 
         """ Set the url path to match the categries and page we are in """
         if len(nononescats) > 0:
@@ -293,7 +297,8 @@ class HUWebshop(object):
                                                            'r_products': recs[:rec_limit],
                                                            'r_type': list(self.recommendationtypes.keys())[0],
                                                            'r_string': list(self.recommendationtypes.values())[0],
-                                                           'header_text': 'Voor u aanbevolen' if len(nononescats) == 0 else ''
+                                                           'header_text': 'Voor u aanbevolen' if len(
+                                                               nononescats) == 0 else ''
                                                            })
 
     def productdetail(self, productid):
