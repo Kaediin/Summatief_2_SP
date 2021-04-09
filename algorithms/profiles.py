@@ -19,9 +19,17 @@ def get_recs(visitor_id, limit, only_ids=False):
     # create dict with empty dicts for every category type and keep count
     category_counter = {'main': {}, 'sub': {}, 'sub_sub': {}}
 
-    cat_results = database.execute_query(
-        "select category, sub_category, sub_sub_category from product_categories where product_id in %s",
-        tuple(all_product_ids,))
+
+    all_product_ids = list(all_product_ids)
+
+    if(len(all_product_ids)==1):
+        all_product_ids.append('')
+
+    if(len(all_product_ids)>0):
+        cat_results = database.execute_query(
+            f"select category, sub_category, sub_sub_category from product_categories where product_id in {tuple(all_product_ids)}","")
+    else:
+        cat_results = []
 
     layers = ['sub_sub', 'sub', 'main']
     products = []
