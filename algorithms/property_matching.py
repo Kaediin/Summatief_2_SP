@@ -78,6 +78,7 @@ def property_matching(product_id, limit, price_data):
                             match_count += 5
                         else:
                             match_count += 1
+
         match_list.append([data[0], match_count])
 
     # sort on match_count

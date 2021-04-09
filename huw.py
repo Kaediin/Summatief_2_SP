@@ -258,7 +258,8 @@ class HUWebshop(object):
         """ This function renders the product page template with the products it
         can retrieve from the database, based on the URL path provided (which
         corresponds to product categories). """
-        limit = session['items_per_page'] if session['items_per_page'] != 0 else database.execute_query("select count(product_id) from products", '')[0]
+        limit = session['items_per_page'] if session['items_per_page'] != 0 else database.execute_query("select count(product_id) from products", '')[0][0]
+
         rec_limit = 4
         catlist = [cat1, cat2, cat3, cat4]
         nononescats = [e for e in catlist if e is not None]
