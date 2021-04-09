@@ -416,7 +416,10 @@ def get_based_on_categories(categories: list, limit):
             .replace('make up', 'make-up')
             .replace('luiers & verschonen', 'luiers en verschonen')
             .replace('snacks & snoep', 'snacks en snoep')
-            .replace('koffie & thee', 'koffie en thee') for e in categories]
+            .replace('koffie & thee', 'koffie en thee')
+            .replace('op is opruiming', 'op=opruiming')
+            .replace('cadeau ideeen', 'Cadeau ideeën')
+            .replace('50 procent korting', '50% korting') for e in categories]
 
     """ return the results from the deepest category. we want the deepest (sub_sub) 
     because those products are more alike """
