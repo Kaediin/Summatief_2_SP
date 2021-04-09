@@ -21,7 +21,7 @@ def get_recs(visitor_id, limit, only_ids=False):
 
     cat_results = database.execute_query(
         "select category, sub_category, sub_sub_category from product_categories where product_id in %s",
-        (all_product_ids,))
+        tuple(all_product_ids,))
 
     layers = ['sub_sub', 'sub', 'main']
     products = []
